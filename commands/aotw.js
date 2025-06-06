@@ -27,11 +27,11 @@ export default {
 
     const embed = {
       title: `🎯 Achievement of the Week : ${aotw.title}`,
-      description: `${statusEmoji} **${statusText}**\n\n${aotw.description}`,
+      description: `${statusEmoji} **${statusText}**\n\n[${aotw.description}](https://retroachievements.org/achievement/${aotw.id})`,
       color,
       fields: [
         { name: 'Points', value: `${aotw.points}`, inline: true },
-        { name: 'Jeu', value: aotw.gameTitle || 'N/A', inline: true },
+        { name: 'Jeu', value: `[${aotw.gameTitle}](https://retroachievements.org/game/${aotw.game.id})` || 'N/A', inline: true },
         { name: 'Créé le', value: aotw.dateCreated || 'N/A', inline: true },
       ],
       timestamp: new Date(),

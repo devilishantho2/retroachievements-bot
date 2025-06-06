@@ -48,7 +48,7 @@ export default {
 
       const embed = {
         title: `🎮 Dernière activité de ${raUsername}`,
-        description: `**${lastGame.title}**\n${richPresence || 'Aucune activité visible.'}`,
+        description: `**[${lastGame.title}](http://retroachievements.org/game/${summary.lastGameId})**\n${richPresence || 'Aucune activité visible.'}`,
         color: 0x00b0f4,
         thumbnail: {
           url: `https://retroachievements.org${userPic}`,

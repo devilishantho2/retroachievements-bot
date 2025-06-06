@@ -83,6 +83,7 @@ async function fetchAndStoreAotw() {
       points: parseInt(response.achievement.points),
       gameTitle: response.game.title,
       dateCreated: response.achievement.dateCreated,
+      game: response.game,
     };
 
     setAotwInfo(aotw);
@@ -106,7 +107,7 @@ async function checkAllUsers() {
 
     const embed = {
       title: `🏆 ${latest.title}`,
-      description: `**${user.raUsername}** a débloqué :\n*${latest.description}*`,
+      description: `**${user.raUsername}** a débloqué :\n*[${latest.description}](https://retroachievements.org/achievement/${latest.achievementId})*`,
       color: parseInt(user.color?.replace('#', '') || '3498db', 16),
       thumbnail: {
         url: `https://media.retroachievements.org${latest.badgeUrl}`,

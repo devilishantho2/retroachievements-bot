@@ -4,5 +4,9 @@
   "description": "Get the remote from Twin Towers and safely exit the level.",
   "points": 2,
   "gameTitle": "Gex",
-  "dateCreated": "2020-10-18"
+  "dateCreated": "2020-10-18",
+  "game": {
+    "id": 11409,
+    "title": "Gex"
+  }
 }
