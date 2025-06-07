@@ -29,6 +29,8 @@ export default {
       aotmUnlocked: false
     });
 
+    console.log(`🕹️ ${raUsername} viens de s'enregistrer`);
+
     await interaction.reply({
       content: `✅ Ton compte **${raUsername}** a bien été enregistré !`,
       flags: MessageFlags.Ephemeral,

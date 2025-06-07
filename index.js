@@ -227,12 +227,6 @@ async function checkRecentGameAwards() {
 client.once('ready', async () => {
   console.log(`🤖 Connecté en tant que ${client.user.tag}`);
 
-  await fetchAndStoreAotw();
-
-  // Reset des flags AOTW et AOTM à false au démarrage
-  resetAotwUnlocked();
-  resetAotmUnlocked();
-
   // Cron pour mise à jour hebdo AOTW (le lundi à 5h)
   cron.schedule('0 5 * * 1', async () => {
     console.log('🕔 Mise à jour hebdomadaire de l’AOTW...');
