@@ -1,5 +1,5 @@
 import { SlashCommandBuilder,MessageFlags } from 'discord.js';
-import { addUser } from '../db.js';
+import { addUser, setAotwUnlocked } from '../db.js';
 
 export default {
   data: new SlashCommandBuilder()
@@ -25,6 +25,8 @@ export default {
       raApiKey,
       lastAchievement: null,
       color: null,
+      aotwUnlocked: false,
+      aotmUnlocked: false
     });
 
     await interaction.reply({

@@ -1,0 +1,12 @@
+{
+    "id": 423365,
+    "title": "Farore's Dream",
+    "description": "Obtain Farore's Pearl.",
+    "points": 5,
+    "gameTitle": "The Legend of Zelda: The Wind Waker",
+    "dateCreated": "2020-10-18",
+    "game": {
+      "id": 9190,
+      "title": "The Legend of Zelda: The Wind Waker"
+    }
+  }

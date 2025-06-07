@@ -32,7 +32,6 @@ export default {
       fields: [
         { name: 'Points', value: `${aotw.points}`, inline: true },
         { name: 'Jeu', value: `[${aotw.gameTitle}](https://retroachievements.org/game/${aotw.game.id})` || 'N/A', inline: true },
-        { name: 'Créé le', value: aotw.dateCreated || 'N/A', inline: true },
       ],
       timestamp: new Date(),
       footer: {

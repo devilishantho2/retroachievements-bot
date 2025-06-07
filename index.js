@@ -10,13 +10,16 @@ import {
   setAotwUnlocked,
   resetAotwUnlocked,
   setAotwInfo,
-  getAotwInfo
+  getAotwInfo,
+  setAotmUnlocked,
+  resetAotmUnlocked,
+  getAotmInfo,
 } from './db.js';
 import {
   buildAuthorization,
   getUserRecentAchievements,
   getAchievementOfTheWeek,
-  getRecentGameAwards
+  getRecentGameAwards,
 } from '@retroachievements/api';
 
 config();
@@ -50,6 +53,7 @@ client.on('interactionCreate', async interaction => {
   }
 });
 
+// Fonction qui récupère le dernier succès récent d’un user
 async function fetchLatestAchievement(raUsername, raApiKey) {
   const authorization = buildAuthorization({
     username: raUsername,
@@ -68,6 +72,7 @@ async function fetchLatestAchievement(raUsername, raApiKey) {
   }
 }
 
+// Récupération et stockage AOTW depuis API
 async function fetchAndStoreAotw() {
   const authorization = buildAuthorization({
     username: process.env.RA_USERNAME,
@@ -94,9 +99,11 @@ async function fetchAndStoreAotw() {
   }
 }
 
+// Vérifie pour chaque utilisateur si un succès est débloqué (y compris AOTW et AOTM)
 async function checkAllUsers() {
   const users = getUsers();
   const aotw = getAotwInfo();
+  const aotm = getAotmInfo();
   const channel = await client.channels.fetch(process.env.CHANNEL_ID);
 
   for (const user of users) {
@@ -105,8 +112,9 @@ async function checkAllUsers() {
 
     if (user.lastAchievement === latest.achievementId) continue;
 
+    // Embed pour tout succès débloqué
     const embed = {
-      title: `🏆 ${latest.title}`,
+      title: `🏆 ${latest.title} (${latest.points})`,
       description: `**${user.raUsername}** a débloqué :\n*[${latest.description}](https://retroachievements.org/achievement/${latest.achievementId})*`,
       color: parseInt(user.color?.replace('#', '') || '3498db', 16),
       thumbnail: {
@@ -122,6 +130,7 @@ async function checkAllUsers() {
     console.log(`✅ ${user.raUsername} → succès ${latest.achievementId}`);
     setLastAchievement(user.discordId, latest.achievementId);
 
+    // Check AOTW
     if (
       aotw?.id &&
       parseInt(latest.achievementId) === aotw.id &&
@@ -145,11 +154,37 @@ async function checkAllUsers() {
       await channel.send({ embeds: [congratsEmbed] });
       console.log(`🏅 ${user.raUsername} a débloqué l'AOTW !`);
     }
+
+    // Check AOTM
+    if (
+      aotm?.id &&
+      parseInt(latest.achievementId) === aotm.id &&
+      !user.aotmUnlocked
+    ) {
+      setAotmUnlocked(user.discordId, true);
+
+      const congratsEmbed = {
+        title: `🎉 AOTM débloqué !`,
+        description: `**${user.raUsername}** a débloqué le succès du mois : **${aotm.title}** !`,
+        color: 0x3498db,
+        thumbnail: {
+          url: `https://media.retroachievements.org${latest.badgeUrl}`,
+        },
+        footer: {
+          text: `Bravo !`,
+        },
+        timestamp: new Date(),
+      };
+
+      await channel.send({ embeds: [congratsEmbed] });
+      console.log(`🏅 ${user.raUsername} a débloqué l'AOTM !`);
+    }
   }
 }
 
 let lastAwardUser = null;
 
+// Check des récompenses récentes (mastered ou beaten)
 async function checkRecentGameAwards() {
   const authorization = buildAuthorization({
     username: process.env.RA_USERNAME,
@@ -188,17 +223,23 @@ async function checkRecentGameAwards() {
   }
 }
 
-// Lancement du bot
+// Au démarrage du bot
 client.once('ready', async () => {
   console.log(`🤖 Connecté en tant que ${client.user.tag}`);
 
   await fetchAndStoreAotw();
 
+  // Reset des flags AOTW et AOTM à false au démarrage
+  resetAotwUnlocked();
+  resetAotmUnlocked();
+
+  // Cron pour mise à jour hebdo AOTW (le lundi à 5h)
   cron.schedule('0 5 * * 1', async () => {
     console.log('🕔 Mise à jour hebdomadaire de l’AOTW...');
     await fetchAndStoreAotw();
   });
 
+  // Intervalle de vérification toutes les 30s
   setInterval(async () => {
     await checkAllUsers();
     await checkRecentGameAwards();
