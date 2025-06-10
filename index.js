@@ -1,5 +1,5 @@
 // index.js
-import { Client, GatewayIntentBits, Collection } from 'discord.js';
+import { Client, GatewayIntentBits, Collection, ActivityType } from 'discord.js';
 import { config } from 'dotenv';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -226,6 +226,18 @@ async function checkRecentGameAwards() {
 // Au démarrage du bot
 client.once('ready', async () => {
   console.log(`🤖 Connecté en tant que ${client.user.tag}`);
+
+  // Met à jour le statut du bot
+  const users = getUsers();
+  client.user.setPresence({
+    activities: [
+      {
+        name: `les succès de ${users.length} joueur${users.length > 1 ? 's' : ''}.`,
+        type: ActivityType.Watching,
+      },
+    ],
+    status: 'online',
+  });
 
   // Cron pour mise à jour hebdo AOTW (le lundi à 5h)
   cron.schedule('0 5 * * 1', async () => {
