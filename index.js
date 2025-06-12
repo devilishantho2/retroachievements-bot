@@ -30,7 +30,6 @@ const client = new Client({
 
 client.commands = new Collection();
 
-// Chargement des commandes slash
 const commandsPath = path.join('./commands');
 const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
 
@@ -48,31 +47,27 @@ client.on('interactionCreate', async interaction => {
   try {
     await command.execute(interaction);
   } catch (error) {
-    console.error('❌ Erreur lors de la commande :', error);
+    log('❌ Erreur lors de la commande : ' + error);
     await interaction.reply({ content: 'Erreur pendant l’exécution.', ephemeral: true });
   }
 });
 
-// Fonction qui récupère le dernier succès récent d’un user
-async function fetchLatestAchievement(raUsername, raApiKey) {
-  const authorization = buildAuthorization({
-    username: raUsername,
-    webApiKey: raApiKey,
-  });
+// Logger dans console + salon distant
+let logChannel = null;
+async function log(message) {
+  console.log(message);
 
   try {
-    const recent = await getUserRecentAchievements(authorization, {
-      username: raUsername,
-    });
-
-    return recent[0] || null;
+    if (!logChannel) {
+      const guild = await client.guilds.fetch(process.env.LOG_GUILD_ID);
+      logChannel = await guild.channels.fetch(process.env.LOG_CHANNEL_ID);
+    }
+    await logChannel.send(typeof message === 'string' ? message : '📝 Log : ' + JSON.stringify(message));
   } catch (err) {
-    console.error(`❌ Erreur API pour ${raUsername}:`, err);
-    return null;
+    console.error('❌ Erreur lors de l’envoi du log dans le salon Discord :', err);
   }
 }
 
-// Récupération et stockage AOTW depuis API
 async function fetchAndStoreAotw() {
   const authorization = buildAuthorization({
     username: process.env.RA_USERNAME,
@@ -93,13 +88,12 @@ async function fetchAndStoreAotw() {
 
     setAotwInfo(aotw);
     resetAotwUnlocked();
-    console.log('📌 AOTW mis à jour avec succès :', aotw.title);
+    log('📌 AOTW mis à jour avec succès : ' + aotw.title);
   } catch (err) {
-    console.error('❌ Impossible de récupérer l’AOTW :', err);
+    log('❌ Impossible de récupérer l’AOTW : ' + err);
   }
 }
 
-// Vérifie pour chaque utilisateur si un succès est débloqué (y compris AOTW et AOTM)
 async function checkAllUsers() {
   const users = getUsers();
   const aotw = getAotwInfo();
@@ -107,84 +101,96 @@ async function checkAllUsers() {
   const channel = await client.channels.fetch(process.env.CHANNEL_ID);
 
   for (const user of users) {
-    const latest = await fetchLatestAchievement(user.raUsername, user.raApiKey);
-    if (!latest) continue;
+    const allRecent = await getUserRecentAchievements(
+      buildAuthorization({ username: user.raUsername, webApiKey: user.raApiKey }),
+      { username: user.raUsername }
+    );
 
-    if (user.lastAchievement === latest.achievementId) continue;
+    if (!allRecent || allRecent.length === 0) continue;
 
-    // Embed pour tout succès débloqué
-    const embed = {
-      title: `🏆 ${latest.title} (${latest.points})`,
-      description: `**${user.raUsername}** a débloqué :\n*[${latest.description}](https://retroachievements.org/achievement/${latest.achievementId})*`,
-      color: parseInt(user.color?.replace('#', '') || '3498db', 16),
-      thumbnail: {
-        url: `https://media.retroachievements.org${latest.badgeUrl}`,
-      },
-      footer: {
-        text: `Jeu : ${latest.gameTitle} | ID: ${latest.achievementId}`,
-      },
-      timestamp: new Date(latest.date),
-    };
+    const newAchievements = [];
 
-    await channel.send({ embeds: [embed] });
-    console.log(`✅ ${user.raUsername} → succès ${latest.achievementId}`);
-    setLastAchievement(user.discordId, latest.achievementId);
-
-    // Check AOTW
-    if (
-      aotw?.id &&
-      parseInt(latest.achievementId) === aotw.id &&
-      !user.aotwUnlocked
-    ) {
-      setAotwUnlocked(user.discordId, true);
-
-      const congratsEmbed = {
-        title: `🎉 AOTW débloqué !`,
-        description: `**${user.raUsername}** a débloqué le succès de la semaine : **${aotw.title}** !`,
-        color: 0x2ecc71,
-        thumbnail: {
-          url: `https://media.retroachievements.org${latest.badgeUrl}`,
-        },
-        footer: {
-          text: `Félicitations !`,
-        },
-        timestamp: new Date(),
-      };
-
-      await channel.send({ embeds: [congratsEmbed] });
-      console.log(`🏅 ${user.raUsername} a débloqué l'AOTW !`);
+    for (const achievement of allRecent) {
+      if (achievement.achievementId === user.lastAchievement) break;
+      newAchievements.push(achievement);
     }
 
-    // Check AOTM
-    if (
-      aotm?.id &&
-      parseInt(latest.achievementId) === aotm.id &&
-      !user.aotmUnlocked
-    ) {
-      setAotmUnlocked(user.discordId, true);
+    if (newAchievements.length === 0) continue;
 
-      const congratsEmbed = {
-        title: `🎉 AOTM débloqué !`,
-        description: `**${user.raUsername}** a débloqué le succès du mois : **${aotm.title}** !`,
-        color: 0x3498db,
+    newAchievements.reverse();
+
+    for (const achievement of newAchievements) {
+      const embed = {
+        title: `🏆 ${achievement.title} (${achievement.points})`,
+        description: `**${user.raUsername}** a débloqué :\n*[${achievement.description}](https://retroachievements.org/achievement/${achievement.achievementId})*`,
+        color: parseInt(user.color?.replace('#', '') || '3498db', 16),
         thumbnail: {
-          url: `https://media.retroachievements.org${latest.badgeUrl}`,
+          url: `https://media.retroachievements.org${achievement.badgeUrl}`,
         },
         footer: {
-          text: `Bravo !`,
+          text: `Jeu : ${achievement.gameTitle} | ID: ${achievement.achievementId}`,
         },
-        timestamp: new Date(),
+        timestamp: new Date(achievement.date),
       };
 
-      await channel.send({ embeds: [congratsEmbed] });
-      console.log(`🏅 ${user.raUsername} a débloqué l'AOTM !`);
+      await channel.send({ embeds: [embed] });
+      log(`✅ ${user.raUsername} → succès ${achievement.achievementId}`);
+
+      if (
+        aotw?.id &&
+        parseInt(achievement.achievementId) === aotw.id &&
+        !user.aotwUnlocked
+      ) {
+        setAotwUnlocked(user.discordId, true);
+
+        const congratsEmbed = {
+          title: `🎉 AOTW débloqué !`,
+          description: `**${user.raUsername}** a débloqué le succès de la semaine : **${aotw.title}** !`,
+          color: 0x2ecc71,
+          thumbnail: {
+            url: `https://media.retroachievements.org${achievement.badgeUrl}`,
+          },
+          footer: {
+            text: `Félicitations !`,
+          },
+          timestamp: new Date(),
+        };
+
+        await channel.send({ embeds: [congratsEmbed] });
+        log(`🏅 ${user.raUsername} a débloqué l'AOTW !`);
+      }
+
+      if (
+        aotm?.id &&
+        parseInt(achievement.achievementId) === aotm.id &&
+        !user.aotmUnlocked
+      ) {
+        setAotmUnlocked(user.discordId, true);
+
+        const congratsEmbed = {
+          title: `🎉 AOTM débloqué !`,
+          description: `**${user.raUsername}** a débloqué le succès du mois : **${aotm.title}** !`,
+          color: 0x3498db,
+          thumbnail: {
+            url: `https://media.retroachievements.org${achievement.badgeUrl}`,
+          },
+          footer: {
+            text: `Bravo !`,
+          },
+          timestamp: new Date(),
+        };
+
+        await channel.send({ embeds: [congratsEmbed] });
+        log(`🏅 ${user.raUsername} a débloqué l'AOTM !`);
+      }
     }
+
+    setLastAchievement(user.discordId, newAchievements[newAchievements.length - 1].achievementId);
   }
 }
 
 let lastAwardUser = null;
 
-// Check des récompenses récentes (mastered ou beaten)
 async function checkRecentGameAwards() {
   const authorization = buildAuthorization({
     username: process.env.RA_USERNAME,
@@ -203,7 +209,6 @@ async function checkRecentGameAwards() {
     if (!matched) return;
 
     if (lastAwardUser === `${latest.user}_${latest.gameId}_${latest.awardKind}`) return;
-
     lastAwardUser = `${latest.user}_${latest.gameId}_${latest.awardKind}`;
 
     const embed = {
@@ -217,17 +222,15 @@ async function checkRecentGameAwards() {
     };
 
     await channel.send({ embeds: [embed] });
-    console.log(`🏅 ${matched.raUsername} a ${latest.awardKind} ${latest.gameTitle}`);
+    log(`🏅 ${matched.raUsername} a ${latest.awardKind} ${latest.gameTitle}`);
   } catch (err) {
-    console.error('❌ Erreur lors du check des récompenses de jeu :', err);
+    log('❌ Erreur lors du check des récompenses de jeu : ' + err);
   }
 }
 
-// Au démarrage du bot
 client.once('ready', async () => {
-  console.log(`🤖 Connecté en tant que ${client.user.tag}`);
+  log(`🤖 Connecté en tant que ${client.user.tag}`);
 
-  // Met à jour le statut du bot
   const users = getUsers();
   client.user.setPresence({
     activities: [
@@ -239,13 +242,11 @@ client.once('ready', async () => {
     status: 'online',
   });
 
-  // Cron pour mise à jour hebdo AOTW (le lundi à 5h)
   cron.schedule('0 5 * * 1', async () => {
-    console.log('🕔 Mise à jour hebdomadaire de l’AOTW...');
+    log('🕔 Mise à jour hebdomadaire de l’AOTW...');
     await fetchAndStoreAotw();
   });
 
-  // Intervalle de vérification toutes les 30s
   setInterval(async () => {
     await checkAllUsers();
     await checkRecentGameAwards();
