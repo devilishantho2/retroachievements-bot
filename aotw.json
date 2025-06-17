@@ -1,12 +1,12 @@
 {
-  "id": 94687,
-  "title": "Helping the Innocent",
-  "description": "Finish Arcade mode as Yoshimitsu on Medium difficulty or higher without changing characters",
-  "points": 10,
-  "gameTitle": "Tekken 2",
-  "dateCreated": "2020-01-15",
+  "id": 60477,
+  "title": "No Style, No Grace, a Funny Face",
+  "description": "With judicious use of your Bongo Blast and Coconut Gun, free Lanky from his prison cell",
+  "points": 5,
+  "gameTitle": "Donkey Kong 64",
+  "dateCreated": "2018-05-24",
   "game": {
-    "id": 11316,
-    "title": "Tekken 2"
+    "id": 10075,
+    "title": "Donkey Kong 64"
   }
 }
