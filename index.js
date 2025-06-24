@@ -20,7 +20,6 @@ import {
   getUserRecentAchievements,
   getUserSummary,
   getAchievementOfTheWeek,
-  getRecentGameAwards,
 } from '@retroachievements/api';
 
 config();
@@ -91,7 +90,7 @@ async function checkAllUsers() {
   for (const user of users) {
     const authorization = buildAuthorization({ username: user.raUsername, webApiKey: user.raApiKey });
     const allRecent = await getUserRecentAchievements(authorization, { username: user.raUsername });
-    const summary = await getUserSummary(authorization, { username: user.raUsername , recentGamesCount: 3});
+    const summary = await getUserSummary(authorization, { username: user.raUsername, recentGamesCount: 3 });
 
     if (!allRecent || allRecent.length === 0) continue;
 
@@ -105,7 +104,6 @@ async function checkAllUsers() {
     newAchievements.reverse();
 
     for (const achievement of newAchievements) {
-      // 🔍 Récupérer le pourcentage spécifique au jeu du succès
       const gameAward = summary.awarded?.[achievement.gameId];
       const num = gameAward?.numAchieved || 0;
       const total = gameAward?.numPossibleAchievements || 1;
@@ -119,7 +117,7 @@ async function checkAllUsers() {
         thumbnail: { url: `https://media.retroachievements.org${achievement.badgeUrl}` },
         image: { url: progressImage },
         footer: {
-          text: `Jeu : ${achievement.gameTitle} | ${num}/${total} succès → ${percent}%`,
+          text: `Jeu : ${achievement.gameTitle} | ${num}/${total} succès`,
         },
         timestamp: new Date(achievement.date),
       };
@@ -160,37 +158,38 @@ async function checkAllUsers() {
       }
     }
 
+    // 🎮 Détection des jeux masterisés
+    const achievedPerGame = {};
+    for (const a of newAchievements) {
+      achievedPerGame[a.gameId] = (achievedPerGame[a.gameId] || 0) + 1;
+    }
+
+    for (const [gameId, _] of Object.entries(achievedPerGame)) {
+      const gameAward = summary.awarded?.[gameId];
+      const total = gameAward?.numPossibleAchievements || 0;
+      const hardcore = gameAward?.numAchievedHardcore || 0;
+    
+      if (hardcore === total && total > 0) {
+        const gameInfo = summary.recentlyPlayed?.find(g => g.gameId.toString() === gameId);
+        const gameTitle = gameInfo?.title || `Jeu ${gameId}`;
+        const consoleName = gameInfo?.consoleName || '';
+        const boxArtUrl = gameInfo?.imageBoxArt ? `https://retroachievements.org${gameInfo.imageBoxArt}` : null;
+    
+        await channel.send({
+          embeds: [{
+            title: `🎮 Jeu masterisé !`,
+            description: `**${user.raUsername}** a masterisé le jeu **${gameTitle}** ${consoleName ? `(${consoleName})` : ''}`,
+            color: 0xf1c40f,
+            footer: { text: `Jeu : ${gameTitle} | Masterisé avec ${hardcore}/${total} succès` },
+            timestamp: new Date(),
+            image: { url: boxArtUrl },
+          }],
+        });
+    
+        log(`🏅 ${user.raUsername} a masterisé ${gameTitle}`);
+      }
+    }    
     setLastAchievement(user.discordId, newAchievements.at(-1).achievementId);
-  }
-}
-
-let lastAwardUser = null;
-async function checkRecentGameAwards() {
-  const authorization = buildAuthorization({ username: process.env.RA_USERNAME, webApiKey: process.env.RA_API_KEY });
-  try {
-    const { results } = await getRecentGameAwards(authorization);
-    if (!results || results.length === 0) return;
-
-    const latest = results[0];
-    const users = getUsers();
-    const channel = await client.channels.fetch(process.env.CHANNEL_ID);
-    const matched = users.find(u => u.raUsername.toLowerCase() === latest.user.toLowerCase());
-    if (!matched) return;
-    if (lastAwardUser === `${latest.user}_${latest.gameId}_${latest.awardKind}`) return;
-    lastAwardUser = `${latest.user}_${latest.gameId}_${latest.awardKind}`;
-
-    const embed = {
-      title: `🎮 ${latest.awardKind === 'mastered' ? 'Jeu masterisé !' : 'Jeu terminé !'}`,
-      description: `**${matched.raUsername}** a ${latest.awardKind === 'mastered' ? 'masterisé' : 'terminé'} le jeu **${latest.gameTitle}** (${latest.consoleName})`,
-      color: latest.awardKind === 'mastered' ? 0xf1c40f : 0xffe370,
-      footer: { text: `Jeu : ${latest.gameTitle} | Type : ${latest.awardKind}` },
-      timestamp: new Date(latest.awardDate),
-    };
-
-    await channel.send({ embeds: [embed] });
-    log(`🏅 ${matched.raUsername} a ${latest.awardKind} ${latest.gameTitle}`);
-  } catch (err) {
-    log('❌ Erreur récompenses jeu : ' + err);
   }
 }
 
@@ -209,7 +208,6 @@ client.once('ready', async () => {
 
   setInterval(async () => {
     await checkAllUsers();
-    await checkRecentGameAwards();
   }, 30 * 1000);
 });
 
