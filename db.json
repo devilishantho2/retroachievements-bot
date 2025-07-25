@@ -1,19 +1,28 @@
 [
   {
     "discordId": "466238794534748171",
-    "raUsername": "stumpbeefgnaw",
+    "raUsername": "devilishantho2",
     "raApiKey": "69wa0kRLDCdF0yVxpjCS98p8lp3GcFwJ",
-    "lastAchievement": 18292,
+    "lastAchievement": 530935,
     "color": "ff0000",
-    "aotwUnlocked": false,
+    "aotwUnlocked": true,
     "aotmUnlocked": true
   },
   {
     "discordId": "306468779385290752",
     "raUsername": "Dragonodon",
     "raApiKey": "mBVKtBKqhG4tZq3C4kLOxIBR99R3M2K5",
-    "lastAchievement": 511116,
+    "lastAchievement": 511120,
     "color": "#0d2553",
+    "aotwUnlocked": false,
+    "aotmUnlocked": false
+  },
+  {
+    "discordId": "316968345381634060",
+    "raUsername": "Supra62",
+    "raApiKey": "bZ65IBV9sSHlZhPFwmkq7garcMhKwLYs",
+    "lastAchievement": 307065,
+    "color": null,
     "aotwUnlocked": false,
     "aotmUnlocked": false
   }

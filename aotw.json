@@ -1,12 +1,12 @@
 {
-  "id": 60477,
-  "title": "No Style, No Grace, a Funny Face",
-  "description": "With judicious use of your Bongo Blast and Coconut Gun, free Lanky from his prison cell",
-  "points": 5,
-  "gameTitle": "Donkey Kong 64",
-  "dateCreated": "2018-05-24",
+  "id": 360110,
+  "title": "A Harder Journey",
+  "description": "Complete Story Mode on 4 Star difficulty or higher.",
+  "points": 10,
+  "gameTitle": "Twinkle Star Sprites",
+  "dateCreated": "2023-10-01",
   "game": {
-    "id": 10075,
-    "title": "Donkey Kong 64"
+    "id": 23882,
+    "title": "Twinkle Star Sprites"
   }
 }
