@@ -21,6 +21,8 @@ import {
   getUserSummary,
   getAchievementOfTheWeek,
 } from '@retroachievements/api';
+import { generateAchievementImage } from './generateImage.js';
+
 
 config();
 
@@ -144,20 +146,22 @@ async function checkAllUsers() {
       const percent = Math.min(100, Math.ceil((num / total) * 100));
       const progressImage = `https://raw.githubusercontent.com/devilishantho2/retroachievements-bot/refs/heads/main/sprites/${percent}.png`;
 
-      const embed = {
-        title: `🏆 ${achievement.title} (${achievement.points})`,
-        description: `**${user.raUsername}** a débloqué :\n*[${achievement.description}](https://retroachievements.org/achievement/${achievement.achievementId})*`,
-        color: parseInt(user.color?.replace('#', '') || '3498db', 16),
-        thumbnail: { url: `https://media.retroachievements.org${achievement.badgeUrl}` },
-        image: { url: progressImage },
-        footer: {
-          text: `Jeu : ${achievement.gameTitle} | ${num}/${total} succès`,
-        },
-        timestamp: new Date(achievement.date),
-      };
-
-      await channel.send({ embeds: [embed] });
-      log(`✅ ${user.raUsername} → succès ${achievement.achievementId} (${percent}%)`);
+      const imageBuffer = await generateAchievementImage({
+        title: achievement.title,
+        points: achievement.points,
+        username: user.raUsername,
+        description: achievement.description,
+        gameTitle: achievement.gameTitle,
+        badgeUrl: achievement.badgeUrl,
+        progressPercent: percent,
+        backgroundImage: user.background,
+        textColor: user.color
+      });
+      
+      await channel.send({
+        files: [{ attachment: imageBuffer, name: 'achievement.png' }]
+      });
+      log(`✅ ${user.raUsername} → succès ${achievement.achievementId} (${percent}%)`);      
 
       if (aotw?.id && parseInt(achievement.achievementId) === aotw.id && !user.aotwUnlocked) {
         setAotwUnlocked(user.discordId, true);

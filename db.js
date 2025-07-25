@@ -29,6 +29,7 @@ export function addUser(user) {
       ...user,
       aotwUnlocked: false,
       aotmUnlocked: false,
+      background: "https://raw.githubusercontent.com/devilishantho2/devilishantho2.github.io/refs/heads/main/default_background.png",
       // autres variables que tu utilises déjà ici
     });
     saveDB(db);
@@ -113,4 +114,19 @@ export function resetAotmUnlocked() {
     user.aotmUnlocked = false;
   }
   saveDB(db);
+}
+
+export function setUserBackground(discordId, background) {
+  const db = loadDB();
+  const user = db.find(u => u.discordId === discordId);
+  if (user) {
+    user.background = background;
+    saveDB(db);
+  }
+}
+
+export function getUserBackground(discordId) {
+  const db = loadDB();
+  const user = db.find(u => u.discordId === discordId);
+  return user?.background ?? 0;
 }

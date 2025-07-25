@@ -26,7 +26,8 @@ export default {
       lastAchievement: null,
       color: null,
       aotwUnlocked: false,
-      aotmUnlocked: false
+      aotmUnlocked: false,
+      background: "https://raw.githubusercontent.com/devilishantho2/devilishantho2.github.io/refs/heads/main/default_background.png"
     });
 
     console.log(`🕹️ ${raUsername} viens de s'enregistrer`);
