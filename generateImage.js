@@ -20,11 +20,12 @@ export async function generateAchievementImage({
   const ctx = canvas.getContext('2d');
 
   // 🖼️ Chargement et affichage de l’image de fond
+  let background;
   try {
     if (backgroundImage === 0) {
-        const background = await loadImage(default_background);
+      background = await loadImage(default_background);
     } else {
-        const background = await loadImage(backgroundImage);
+      background = await loadImage(backgroundImage);
     }
     ctx.drawImage(background, 0, 0, width, height);
   } catch (err) {
