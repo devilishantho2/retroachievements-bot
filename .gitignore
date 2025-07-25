@@ -1,4 +1,5 @@
 /node_modules
 .env
 .envcopy
+.env2
 .json

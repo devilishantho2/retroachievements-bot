@@ -54,16 +54,38 @@ async function log(message) {
       const guild = await client.guilds.fetch(process.env.LOG_GUILD_ID);
       logChannel = await guild.channels.fetch(process.env.LOG_CHANNEL_ID);
     }
-    await logChannel.send(typeof message === 'string' ? message : '📝 Log : ' + JSON.stringify(message));
+    const finalMessage = typeof message === 'string'
+      ? message
+      : '📝 Log : ' + (message instanceof Error ? message.stack : JSON.stringify(message));
+    await logChannel.send(finalMessage.slice(0, 2000));
   } catch (err) {
     console.error('❌ Erreur log Discord :', err);
+  }
+}
+
+// 🔁 Retry avec backoff exponentiel
+async function retry(fn, retries = 3, delay = 500, userLabel = '') {
+  let attempt = 0;
+  while (attempt < retries) {
+    try {
+      return await fn();
+    } catch (err) {
+      attempt++;
+      if (attempt >= retries) {
+        log(`❌ Échec après ${retries} tentatives${userLabel ? ` pour ${userLabel}` : ''} : ${err.message || err}`);
+        throw err;
+      }
+      log(`⏳ Tentative ${attempt}/${retries} échouée${userLabel ? ` pour ${userLabel}` : ''}, nouvelle tentative dans ${delay}ms...`);
+      await new Promise(res => setTimeout(res, delay));
+      delay *= 2;
+    }
   }
 }
 
 async function fetchAndStoreAotw() {
   const authorization = buildAuthorization({ username: process.env.RA_USERNAME, webApiKey: process.env.RA_API_KEY });
   try {
-    const response = await getAchievementOfTheWeek(authorization);
+    const response = await retry(() => getAchievementOfTheWeek(authorization), 3, 500);
     const aotw = {
       id: parseInt(response.achievement.id),
       title: response.achievement.title,
@@ -77,7 +99,7 @@ async function fetchAndStoreAotw() {
     resetAotwUnlocked();
     log('📌 AOTW mis à jour : ' + aotw.title);
   } catch (err) {
-    log('❌ Erreur fetch AOTW : ' + err);
+    log('❌ Erreur fetch AOTW (après retry) : ' + (err.message || err));
   }
 }
 
@@ -89,8 +111,20 @@ async function checkAllUsers() {
 
   for (const user of users) {
     const authorization = buildAuthorization({ username: user.raUsername, webApiKey: user.raApiKey });
-    const allRecent = await getUserRecentAchievements(authorization, { username: user.raUsername });
-    const summary = await getUserSummary(authorization, { username: user.raUsername, recentGamesCount: 3 });
+
+    let allRecent, summary;
+    try {
+      allRecent = await retry(() =>
+        getUserRecentAchievements(authorization, { username: user.raUsername }),
+        3, 500, user.raUsername
+      );
+      summary = await retry(() =>
+        getUserSummary(authorization, { username: user.raUsername, recentGamesCount: 3 }),
+        3, 500, user.raUsername
+      );
+    } catch (err) {
+      continue; // erreur déjà loguée, on passe au suivant
+    }
 
     if (!allRecent || allRecent.length === 0) continue;
 
@@ -125,7 +159,6 @@ async function checkAllUsers() {
       await channel.send({ embeds: [embed] });
       log(`✅ ${user.raUsername} → succès ${achievement.achievementId} (${percent}%)`);
 
-      // 🎖 AOTW
       if (aotw?.id && parseInt(achievement.achievementId) === aotw.id && !user.aotwUnlocked) {
         setAotwUnlocked(user.discordId, true);
         await channel.send({
@@ -141,7 +174,6 @@ async function checkAllUsers() {
         log(`🏅 ${user.raUsername} a débloqué l'AOTW !`);
       }
 
-      // 🏅 AOTM
       if (aotm?.id && parseInt(achievement.achievementId) === aotm.id && !user.aotmUnlocked) {
         setAotmUnlocked(user.discordId, true);
         await channel.send({
@@ -158,7 +190,6 @@ async function checkAllUsers() {
       }
     }
 
-    // 🎮 Détection des jeux masterisés
     const achievedPerGame = {};
     for (const a of newAchievements) {
       achievedPerGame[a.gameId] = (achievedPerGame[a.gameId] || 0) + 1;
@@ -168,13 +199,13 @@ async function checkAllUsers() {
       const gameAward = summary.awarded?.[gameId];
       const total = gameAward?.numPossibleAchievements || 0;
       const hardcore = gameAward?.numAchievedHardcore || 0;
-    
+
       if (hardcore === total && total > 0) {
         const gameInfo = summary.recentlyPlayed?.find(g => g.gameId.toString() === gameId);
         const gameTitle = gameInfo?.title || `Jeu ${gameId}`;
         const consoleName = gameInfo?.consoleName || '';
         const boxArtUrl = gameInfo?.imageBoxArt ? `https://retroachievements.org${gameInfo.imageBoxArt}` : null;
-    
+
         await channel.send({
           embeds: [{
             title: `🎮 Jeu masterisé !`,
@@ -185,10 +216,11 @@ async function checkAllUsers() {
             image: { url: boxArtUrl },
           }],
         });
-    
+
         log(`🏅 ${user.raUsername} a masterisé ${gameTitle}`);
       }
-    }    
+    }
+
     setLastAchievement(user.discordId, newAchievements.at(-1).achievementId);
   }
 }
@@ -207,7 +239,11 @@ client.once('ready', async () => {
   });
 
   setInterval(async () => {
-    await checkAllUsers();
+    try {
+      await checkAllUsers();
+    } catch (err) {
+      log(`❌ Erreur dans checkAllUsers : ${err.message || err}`);
+    }
   }, 30 * 1000);
 });
 
