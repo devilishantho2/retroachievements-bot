@@ -1,4 +1,15 @@
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { createCanvas, loadImage, registerFont } from 'canvas';
+
+// Pour __dirname compatible ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// 📌 Enregistrer la police Ginto
+registerFont(path.join(__dirname, 'fonts', 'Ginto_Regular.ttf'), { family: 'Ginto Normal' });
+registerFont(path.join(__dirname, 'fonts', 'Ginto_Bold.ttf'), { family: 'Ginto Bold' });
+registerFont(path.join(__dirname, 'fonts', 'NotoColorEmoji-Regular.ttf'), { family: 'Noto Color Emoji Normal' });
 
 const assombrissement = 50; // 0 à 100 → 40 = 40% d’assombrissement
 const default_background = "https://raw.githubusercontent.com/devilishantho2/devilishantho2.github.io/refs/heads/main/default_background.png";
@@ -43,17 +54,21 @@ export async function generateAchievementImage({
 
   // Texte blanc
   ctx.fillStyle = textColor;
-  ctx.font = 'bold 28px Arial';
-  ctx.fillText(`🏆 ${title} (${points} pts)`, 20, 50);
+  ctx.font = '28px "Noto Color Emoji Normal"';
+  ctx.fillText('🏆', 20, 50);
 
-  ctx.font = '24px Arial';
+  ctx.font = '28px "Ginto Bold"';
+  ctx.fillText(` ${title} (${points} pts)`, 55, 50);
+
+
+  ctx.font = '24px "Ginto Normal"';
   ctx.fillText(`${username} vient de débloquer :`, 20, 90);
 
-  ctx.font = '20px Arial';
+  ctx.font = 'italic 20px "Ginto Normal"';
   wrapText(ctx, `« ${description} »`, 20, 130, width - 40 - 160, 26); // espace pour le badge
 
-  ctx.font = '22px Arial';
-  ctx.fillText(`Sur le jeu : ${gameTitle}`, 20, 200);
+  ctx.font = '22px "Ginto Normal"';
+  ctx.fillText(`Jeu : ${gameTitle} | ${progressPercent}%`, 20, height - 20);
 
   // 🎖️ Badge + barre de progression
   try {
