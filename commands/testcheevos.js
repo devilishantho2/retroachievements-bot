@@ -30,7 +30,8 @@ export default {
       badgeUrl: '/Badge/315508.png',
       progressPercent: 50,
       backgroundImage: user.background,
-      textColor: user.color
+      textColor: user.color,
+      hardcore: true
     });
 
     // Envoie dans le salon

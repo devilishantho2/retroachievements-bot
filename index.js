@@ -144,7 +144,6 @@ async function checkAllUsers() {
       const num = gameAward?.numAchieved || 0;
       const total = gameAward?.numPossibleAchievements || 1;
       const percent = Math.min(100, Math.ceil((num / total) * 100));
-      const progressImage = `https://raw.githubusercontent.com/devilishantho2/retroachievements-bot/refs/heads/main/sprites/${percent}.png`;
 
       const imageBuffer = await generateAchievementImage({
         title: achievement.title,
@@ -155,7 +154,8 @@ async function checkAllUsers() {
         badgeUrl: achievement.badgeUrl,
         progressPercent: percent,
         backgroundImage: user.background,
-        textColor: user.color
+        textColor: user.color,
+        hardcore: achievement.hardcoreMode
       });
       
       await channel.send({

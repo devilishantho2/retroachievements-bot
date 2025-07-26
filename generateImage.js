@@ -6,10 +6,18 @@
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
 
-  // 📌 Enregistrer la police Ginto
-  registerFont(path.join(__dirname, 'fonts', 'Ginto_Regular.ttf'), { family: 'Ginto Normal' });
-  registerFont(path.join(__dirname, 'fonts', 'Ginto_Bold.ttf'), { family: 'Ginto Bold' });
-  registerFont(path.join(__dirname, 'fonts', 'NotoColorEmoji-Regular.ttf'), { family: 'Noto Color Emoji Normal' });
+  // 📌 Enregistrer la police Ginto  
+  registerFont(path.join(__dirname, 'fonts/ggsans-Bold.ttf'), {
+    family: 'gg sans Bold',
+  });
+  
+  registerFont(path.join(__dirname, 'fonts/ggsans-Medium.ttf'), {
+    family: 'gg sans Moyen',
+  });
+  
+  registerFont(path.join(__dirname, 'fonts/ggsans-MediumItalic.ttf'), {
+    family: 'gg sans Italique moyen',
+  });
 
   const assombrissement = 50;
   const default_background = "https://raw.githubusercontent.com/devilishantho2/devilishantho2.github.io/refs/heads/main/default_background.png";
@@ -24,7 +32,8 @@
     badgeUrl,
     progressPercent,
     backgroundImage,
-    textColor
+    textColor,
+    hardcore = false
   }) {
     const width = 800;
     const height = 250;
@@ -48,6 +57,12 @@
       ctx.fillRect(0, 0, width, height);
       ctx.globalAlpha = 1.0;
     }
+  
+    // Appliquer l’ombre portée noire
+    ctx.shadowColor = 'black';
+    ctx.shadowOffsetX = 2;
+    ctx.shadowOffsetY = 2;
+    ctx.shadowBlur = 4;
 
     // 🏆 Image trophée
     try {
@@ -57,31 +72,19 @@
       // ne rien faire si échec
     }
 
-    // Appliquer l’ombre portée noire
-    ctx.shadowColor = 'black';
-    ctx.shadowOffsetX = 2;
-    ctx.shadowOffsetY = 2;
-    ctx.shadowBlur = 4;
-
     // Texte
     ctx.fillStyle = textColor;
-    ctx.font = '28px "Ginto Bold"';
+    ctx.font = 'bold 28px "gg sans Bold"';
     ctx.fillText(` ${title} (${points} pts)`, 60, 45); // Décalage après l'image
 
-    ctx.font = '24px "Ginto Normal"';
+    ctx.font = '24px "gg sans Moyen"';
     ctx.fillText(`${username} vient de débloquer :`, 20, 90);
 
-    ctx.font = 'italic 20px "Ginto Normal"';
+    ctx.font = 'italic 20px "gg sans Italique moyen"';
     wrapText(ctx, `« ${description} »`, 20, 130, width - 40 - 160, 26);
 
-    ctx.font = '22px "Ginto Normal"';
+    ctx.font = '22px "gg sans Moyen"';
     ctx.fillText(`Jeu : ${gameTitle} | ${progressPercent}%`, 20, height - 20);
-
-    // Désactiver l’ombre après
-    ctx.shadowColor = 'transparent';
-    ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 0;
-    ctx.shadowBlur = 0;
 
     // 🎖️ Badge + barre de progression
     try {
@@ -91,7 +94,14 @@
         const badgeX = width - badgeSize - 20;
         const badgeY = height / 2 - badgeSize / 2;
         ctx.drawImage(badgeImage, badgeX, badgeY, badgeSize, badgeSize);
-
+  
+        // ⭐ Contour jaune si hardcore
+        if (hardcore) {
+          ctx.lineWidth = 4;
+          ctx.strokeStyle = '#FFD700'; // or 'yellow'
+          ctx.strokeRect(badgeX, badgeY, badgeSize, badgeSize);
+        }
+  
         if (progressPercent !== undefined && progressPercent !== null) {
           const progressImg = await loadImage(`https://raw.githubusercontent.com/devilishantho2/retroachievements-bot/refs/heads/main/sprites/${Math.min(Math.ceil(progressPercent), 100)}.png`);
           const progressWidth = 100;
@@ -104,6 +114,12 @@
     } catch {
       // on ignore les erreurs d'image
     }
+
+    // Désactiver l’ombre après
+    ctx.shadowColor = 'transparent';
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+    ctx.shadowBlur = 0;
 
     return canvas.toBuffer('image/png');
   }
