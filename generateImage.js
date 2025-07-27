@@ -7,16 +7,12 @@
   const __dirname = path.dirname(__filename);
 
   // 📌 Enregistrer la police Ginto  
-  registerFont(path.join(__dirname, 'fonts/ggsans-Bold.ttf'), {
-    family: 'gg sans Bold',
+  registerFont(path.join(__dirname, 'fonts/PixelOperatorHB.ttf'), {
+    family: 'Pixel Operator HB Normal',
   });
   
-  registerFont(path.join(__dirname, 'fonts/ggsans-Medium.ttf'), {
-    family: 'gg sans Moyen',
-  });
-  
-  registerFont(path.join(__dirname, 'fonts/ggsans-MediumItalic.ttf'), {
-    family: 'gg sans Italique moyen',
+  registerFont(path.join(__dirname, 'fonts/PixelOperator-Bold.ttf'), {
+    family: 'Pixel Operator Gras',
   });
 
   const assombrissement = 50;
@@ -74,16 +70,64 @@
 
     // Texte
     ctx.fillStyle = textColor;
-    ctx.font = 'bold 28px "gg sans Bold"';
-    ctx.fillText(` ${title} (${points} pts)`, 60, 45); // Décalage après l'image
-
-    ctx.font = '24px "gg sans Moyen"';
+    ctx.font = '35px "Pixel Operator Gras"';
+    const titleText = ` ${title} (${points})`;
+    const titleX = 60;
+    const titleY = 45;
+    
+    // 🎨 Choisir la couleur selon les points
+    let bgColor;
+    if (points >= 1 && points <= 4) bgColor = 'rgb(143, 140, 0)';       // Jaune
+    else if (points >= 5 && points <= 9) bgColor = 'rgba(0, 127, 0, 1)';     // Vert
+    else if (points === 10) bgColor = 'rgb(0, 67, 134)'; // Bleu
+    else if (points === 25) bgColor = 'rgba(127, 0, 0, 1)';   // Rouge
+    else if (points === 50) bgColor = 'rgb(97, 0, 97)'; // Violet
+    else bgColor = 'rgb(100, 100, 100)'; // Neutre
+    
+    // 📏 Mesurer le texte
+    const metrics = ctx.measureText(titleText);
+    const textWidth = metrics.width;
+    const fontSize = 35; // utilisé pour centrer verticalement
+    
+    // 🔲 Dimensions du fond
+    const paddingX = 0;
+    const paddingY = 0;
+    const rectX = titleX - paddingX + 5;
+    const rectY = titleY - fontSize + (fontSize * 0.2) - paddingY;
+    const rectWidth = textWidth + paddingX * 2;
+    const rectHeight = fontSize + paddingY * 1.5;
+    
+    // 🟦 Dessiner un rectangle arrondi
+    function roundRect(ctx, x, y, width, height, radius = 12) {
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.lineTo(x + width - radius, y);
+      ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+      ctx.lineTo(x + width, y + height - radius);
+      ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+      ctx.lineTo(x + radius, y + height);
+      ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+      ctx.lineTo(x, y + radius);
+      ctx.quadraticCurveTo(x, y, x + radius, y);
+      ctx.closePath();
+      ctx.fill();
+    }
+    
+    // 🖌️ Remplir le fond arrondi
+    ctx.fillStyle = bgColor;
+    roundRect(ctx, rectX, rectY, rectWidth, rectHeight, 6);
+    
+    // ✍️ Écrire le texte par-dessus
+    ctx.fillStyle = textColor;
+    ctx.fillText(titleText, titleX, titleY);
+    
+    ctx.font = '24px "Pixel Operator HB Normal"';
     ctx.fillText(`${username} vient de débloquer :`, 20, 90);
 
-    ctx.font = 'italic 20px "gg sans Italique moyen"';
-    wrapText(ctx, `« ${description} »`, 20, 130, width - 40 - 160, 26);
+    ctx.font = '20px "Pixel Operator HB Normal"';
+    wrapTextSkewed(ctx, `« ${description} »`, 20, 130, width - 40 - 160, 26, -0.2);
 
-    ctx.font = '22px "gg sans Moyen"';
+    ctx.font = '22px "Pixel Operator HB Normal"';
     ctx.fillText(`Jeu : ${gameTitle} | ${progressPercent}%`, 20, height - 20);
 
     // 🎖️ Badge + barre de progression
@@ -125,20 +169,31 @@
   }
 
   // Fonction d’habillage de texte (multiligne)
-  function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+  function wrapTextSkewed(ctx, text, x, y, maxWidth, lineHeight, skewX = 0) {
     const words = text.split(' ');
     let line = '';
+    let offsetY = 0;
+
     for (let n = 0; n < words.length; n++) {
-      const testLine = line + words[n] + ' ';
-      const metrics = ctx.measureText(testLine);
-      const testWidth = metrics.width;
-      if (testWidth > maxWidth && n > 0) {
-        ctx.fillText(line, x, y);
-        line = words[n] + ' ';
-        y += lineHeight;
-      } else {
-        line = testLine;
-      }
+        const testLine = line + words[n] + ' ';
+        const metrics = ctx.measureText(testLine);
+        const testWidth = metrics.width;
+
+        if (testWidth > maxWidth && n > 0) {
+            const offsetX = skewX * (y + offsetY); // décalage à gauche pour compenser
+            ctx.setTransform(1, 0, skewX, 1, -offsetX, 0);
+            ctx.fillText(line, x, y + offsetY);
+            offsetY += lineHeight;
+            line = words[n] + ' ';
+        } else {
+            line = testLine;
+        }
     }
-    ctx.fillText(line, x, y);
-  }
+
+    const offsetX = skewX * (y + offsetY);
+    ctx.setTransform(1, 0, skewX, 1, -offsetX, 0);
+    ctx.fillText(line, x, y + offsetY);
+
+    // Réinitialise les transformations
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+}

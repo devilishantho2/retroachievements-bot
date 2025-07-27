@@ -1,11 +1,18 @@
-import { SlashCommandBuilder,MessageFlags, Message } from 'discord.js';
+import { SlashCommandBuilder, MessageFlags } from 'discord.js';
 import { getUsers } from '../db.js';
 import { generateAchievementImage } from '../generateImage.js';
 
 export default {
   data: new SlashCommandBuilder()
     .setName('testcheevos')
-    .setDescription('Affiche un succès pour tester les personnalisations'),
+    .setDescription('Affiche un succès pour tester les personnalisations')
+    .addIntegerOption(option =>
+      option.setName('points')
+        .setDescription('Nombre de points du succès')
+        .setRequired(true)
+        .setMinValue(0)
+        .setMaxValue(50)
+    ),
 
   async execute(interaction) {
     const users = getUsers();
@@ -18,12 +25,14 @@ export default {
       });
     }
 
+    const points = interaction.options.getInteger('points');
+
     // Indique à Discord qu'on répondra plus tard
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     const imageBuffer = await generateAchievementImage({
       title: 'League Champion',
-      points: 25,
+      points,
       username: user.raUsername,
       description: 'Defeat the current champion and become the Pokémon League Champion',
       gameTitle: 'Pokémon Emerald Version',
