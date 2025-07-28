@@ -1,12 +1,12 @@
 {
-  "id": 360110,
-  "title": "A Harder Journey",
-  "description": "Complete Story Mode on 4 Star difficulty or higher.",
-  "points": 10,
-  "gameTitle": "Twinkle Star Sprites",
-  "dateCreated": "2023-10-01",
+  "id": 20059,
+  "title": "2nd key",
+  "description": "Find the 2nd key",
+  "points": 5,
+  "gameTitle": "~Hack~ Extra Mario Bros.",
+  "dateCreated": "2015-01-16",
   "game": {
-    "id": 23882,
-    "title": "Twinkle Star Sprites"
+    "id": 5288,
+    "title": "~Hack~ Extra Mario Bros."
   }
 }

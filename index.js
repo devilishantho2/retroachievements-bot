@@ -145,22 +145,27 @@ async function checkAllUsers() {
       const total = gameAward?.numPossibleAchievements || 1;
       const percent = Math.min(100, Math.ceil((num / total) * 100));
 
-      const imageBuffer = await generateAchievementImage({
-        title: achievement.title,
-        points: achievement.points,
-        username: user.raUsername,
-        description: achievement.description,
-        gameTitle: achievement.gameTitle,
-        badgeUrl: achievement.badgeUrl,
-        progressPercent: percent,
-        backgroundImage: user.background,
-        textColor: user.color,
-        hardcore: achievement.hardcoreMode
-      });
+      if (percent > 0) {
+        const imageBuffer = await generateAchievementImage({
+          title: achievement.title,
+          points: achievement.points,
+          username: user.raUsername,
+          description: achievement.description,
+          gameTitle: achievement.gameTitle,
+          badgeUrl: achievement.badgeUrl,
+          progressPercent: percent,
+          backgroundImage: user.background,
+          textColor: user.color,
+          hardcore: achievement.hardcoreMode
+        });
+    
+        await channel.send({
+          files: [{ attachment: imageBuffer, name: 'achievement.png' }]
+        });
+      } else {
+        log(`📎 ${user.raUsername} → succès ${achievement.achievementId} ignoré pour envoi (percent = 0)`);
+      }
       
-      await channel.send({
-        files: [{ attachment: imageBuffer, name: 'achievement.png' }]
-      });
       log(`✅ ${user.raUsername} → succès ${achievement.achievementId} (${percent}%)`);      
 
       if (aotw?.id && parseInt(achievement.achievementId) === aotw.id && !user.aotwUnlocked) {
