@@ -1,5 +1,5 @@
-import { SlashCommandBuilder,MessageFlags } from 'discord.js';
-import { getUsers, getAotwInfo } from '../db.js';
+import { SlashCommandBuilder, MessageFlags } from 'discord.js';
+import { loadDB, getAotwInfo } from '../db.js';
 
 export default {
   data: new SlashCommandBuilder()
@@ -16,8 +16,8 @@ export default {
       });
     }
 
-    const users = getUsers();
-    const user = users.find(u => u.discordId === interaction.user.id);
+    const usersDB = loadDB('usersdb');
+    const user = usersDB[interaction.user.id]; // accès direct via clé discordId
 
     const unlocked = user ? user.aotwUnlocked : false;
 
@@ -31,7 +31,7 @@ export default {
       color,
       fields: [
         { name: 'Points', value: `${aotw.points}`, inline: true },
-        { name: 'Jeu', value: `[${aotw.gameTitle}](https://retroachievements.org/game/${aotw.game.id})` || 'N/A', inline: true },
+        { name: 'Jeu', value: aotw.gameTitle ? `[${aotw.gameTitle}](https://retroachievements.org/game/${aotw.game.id})` : 'N/A', inline: true },
       ],
       timestamp: new Date(),
       footer: {

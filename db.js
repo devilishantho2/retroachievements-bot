@@ -1,64 +1,84 @@
 import fs from 'fs';
 
-const DB_FILE = './db.json';
-const AOTW_FILE = './aotw.json';
-const AOTM_FILE = './aotm.json';
+const USERS_FILE = './data/users.json';
+const GUILDS_FILE = './data/guilds.json';
+const AOTW_FILE = './data/aotw.json';
+const AOTM_FILE = './data/aotm.json';
 
 // --- Fonctions existantes, à garder intactes ---
 // Exemple : chargement DB
-export function loadDB() {
-  if (!fs.existsSync(DB_FILE)) fs.writeFileSync(DB_FILE, JSON.stringify([]));
-  return JSON.parse(fs.readFileSync(DB_FILE));
+export function loadDB(db_name) {
+  if (db_name === 'usersdb') {
+    if (!fs.existsSync(USERS_FILE)) fs.writeFileSync(USERS_FILE, JSON.stringify([]));
+    return JSON.parse(fs.readFileSync(USERS_FILE));
+  }
+  else if (db_name === 'guildsdb') {
+    if (!fs.existsSync(GUILDS_FILE)) fs.writeFileSync(GUILDS_FILE, JSON.stringify([]));
+    return JSON.parse(fs.readFileSync(GUILDS_FILE));
+  }
 }
 
 // Exemple : sauvegarde DB
-export function saveDB(db) {
-  fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
+export function saveDB(db, db_name) {
+  if (db_name === 'usersdb') {
+    fs.writeFileSync(USERS_FILE, JSON.stringify(db, null, 2));
+  }
+  else if (db_name === 'guildsdb') {
+    fs.writeFileSync(GUILDS_FILE, JSON.stringify(db, null, 2));
+  }
 }
 
-// Exemple : récupérer tous les users
-export function getUsers() {
-  return loadDB();
-}
+// Ajouter un user si il existe pas
+export function addUser(discordId, guildId, data) {
+  // Chargement des DB
+  const usersDB = loadDB('usersdb');
+  const guildsDB = loadDB('guildsdb');
 
-// Exemple : ajouter un user avec initialisation de aotwUnlocked et aotmUnlocked
-export function addUser(user) {
-  const db = loadDB();
-  if (!db.find(u => u.discordId === user.discordId)) {
-    db.push({
-      ...user,
-      aotwUnlocked: false,
-      aotmUnlocked: false,
-      background: "https://raw.githubusercontent.com/devilishantho2/devilishantho2.github.io/refs/heads/main/default_background.png",
-      // autres variables que tu utilises déjà ici
-    });
-    saveDB(db);
+  // Ajout dans users.json si inexistant
+  if (!usersDB[discordId]) {
+    usersDB[discordId] = data;
+    saveDB(usersDB, 'usersdb');
+  }
+
+  // Gestion guilds.json
+  if (!guildsDB[guildId]) {
+    // Création d'une nouvelle guilde
+    guildsDB[guildId] = {
+      channel: 0,
+      users: []
+    };
+  }
+
+  // Ajout de l'utilisateur dans la liste users si pas déjà dedans
+  if (!guildsDB[guildId].users.includes(discordId)) {
+    guildsDB[guildId].users.push(discordId);
+    saveDB(guildsDB, 'guildsdb');
   }
 }
 
 // Exemple : mise à jour lastAchievement
 export function setLastAchievement(discordId, achievementId) {
-  const db = loadDB();
-  const user = db.find(u => u.discordId === discordId);
+  const usersDB = loadDB('usersdb');
+  const user = usersDB[discordId];
   if (user) {
     user.lastAchievement = achievementId;
-    saveDB(db);
+    saveDB(usersDB, 'usersdb');
   }
 }
 
 // --- Fonctions existantes pour la couleur utilisateur (exemple) ---
 export function setUserColor(discordId, color) {
-  const db = loadDB();
-  const user = db.find(u => u.discordId === discordId);
+  const usersDB = loadDB('usersdb');
+  const user = usersDB[discordId];
   if (user) {
     user.color = color;
-    saveDB(db);
+    saveDB(usersDB, 'usersdb');
   }
 }
 
 export function getUserColor(discordId) {
-  const db = loadDB();
-  const user = db.find(u => u.discordId === discordId);
+  const usersDB = loadDB('usersdb');
+  const user = usersDB[discordId];
   return user?.color ?? null;
 }
 
@@ -73,20 +93,22 @@ export function setAotwInfo(aotw) {
 }
 
 export function setAotwUnlocked(discordId, value = true) {
-  const db = loadDB();
-  const user = db.find(u => u.discordId === discordId);
+  const usersDB = loadDB('usersdb');
+  const user = usersDB[discordId];
   if (user) {
     user.aotwUnlocked = value;
-    saveDB(db);
+    saveDB(usersDB, 'usersdb');
   }
 }
 
 export function resetAotwUnlocked() {
-  const db = loadDB();
-  for (const user of db) {
-    user.aotwUnlocked = false;
+  const usersDB = loadDB('usersdb');
+  for (const discordId in usersDB) {
+    if (Object.hasOwn(usersDB, discordId)) {
+      usersDB[discordId].aotwUnlocked = false;
+    }
   }
-  saveDB(db);
+  saveDB(usersDB, 'usersdb');
 }
 
 // --- Fonctions AOTM (à ajouter) ---
@@ -100,33 +122,35 @@ export function setAotmInfo(aotm) {
 }
 
 export function setAotmUnlocked(discordId, value = true) {
-  const db = loadDB();
-  const user = db.find(u => u.discordId === discordId);
+  const usersDB = loadDB('usersdb');
+  const user = usersDB[discordId];
   if (user) {
     user.aotmUnlocked = value;
-    saveDB(db);
+    saveDB(usersDB, 'usersdb');
   }
 }
 
 export function resetAotmUnlocked() {
-  const db = loadDB();
-  for (const user of db) {
-    user.aotmUnlocked = false;
+  const usersDB = loadDB('usersdb');
+  for (const discordId in usersDB) {
+    if (Object.hasOwn(usersDB, discordId)) {
+      usersDB[discordId].aotmUnlocked = false;
+    }
   }
-  saveDB(db);
+  saveDB(usersDB, 'usersdb');
 }
 
 export function setUserBackground(discordId, background) {
-  const db = loadDB();
-  const user = db.find(u => u.discordId === discordId);
+  const usersDB = loadDB('usersdb');
+  const user = usersDB[discordId];
   if (user) {
     user.background = background;
-    saveDB(db);
+    saveDB(usersDB, 'usersdb');
   }
 }
 
 export function getUserBackground(discordId) {
-  const db = loadDB();
-  const user = db.find(u => u.discordId === discordId);
+  const usersDB = loadDB('usersdb');
+  const user = usersDB[discordId];
   return user?.background ?? 0;
 }

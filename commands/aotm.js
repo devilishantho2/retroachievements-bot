@@ -1,5 +1,5 @@
 import { SlashCommandBuilder, MessageFlags } from 'discord.js';
-import { getUsers, getAotmInfo } from '../db.js';
+import { loadDB, getAotmInfo } from '../db.js';
 
 export default {
   data: new SlashCommandBuilder()
@@ -16,10 +16,10 @@ export default {
       });
     }
 
-    const users = getUsers();
-    const user = users.find(u => u.discordId === interaction.user.id);
+    const usersDB = loadDB('usersdb');
+    const user = usersDB[interaction.user.id]; // accès direct via clé discordId
 
-    const unlocked = user ? user.aotmUnlocked : false;
+    const unlocked = user ? user.aotwUnlocked : false;
 
     const color = unlocked ? 0x2ecc71 : 0xe74c3c;
     const statusEmoji = unlocked ? '✅' : '❌';
@@ -31,7 +31,7 @@ export default {
       color,
       fields: [
         { name: 'Points', value: `${aotm.points}`, inline: true },
-        { name: 'Jeu', value: `[${aotm.gameTitle}](https://retroachievements.org/game/${aotm.game.id})` || 'N/A', inline: true },
+        { name: 'Jeu', value: aotm.gameTitle ? `[${aotm.gameTitle}](https://retroachievements.org/game/${aotm.game.id})` : 'N/A', inline: true },
       ],
       timestamp: new Date(),
       footer: {

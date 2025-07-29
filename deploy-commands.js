@@ -24,6 +24,11 @@ try {
     { body: commands }
   );
 
+  await rest.put(
+    Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID2),
+    { body: commands }
+  );
+
   console.log('✅ Commandes déployées avec succès !');
 } catch (error) {
   console.error('❌ Erreur de déploiement :', error);

@@ -1,32 +1,29 @@
-[
-  {
-    "discordId": "466238794534748171",
+{
+  "466238794534748171": {
     "raUsername": "devilishantho2",
     "raApiKey": "69wa0kRLDCdF0yVxpjCS98p8lp3GcFwJ",
-    "lastAchievement": 490251,
+    "lastAchievement": 506409,
     "color": "#ffffff",
     "aotwUnlocked": true,
     "aotmUnlocked": true,
     "background": "https://raw.githubusercontent.com/devilishantho2/devilishantho2.github.io/refs/heads/main/devilishantho2_background.png"
   },
-  {
-    "discordId": "306468779385290752",
+  "306468779385290752": {
     "raUsername": "Dragonodon",
     "raApiKey": "mBVKtBKqhG4tZq3C4kLOxIBR99R3M2K5",
-    "lastAchievement": 521567,
+    "lastAchievement": 0,
     "color": "#3bc3db",
     "aotwUnlocked": false,
     "aotmUnlocked": false,
     "background": "https://raw.githubusercontent.com/devilishantho2/devilishantho2.github.io/refs/heads/main/drago_background.png"
   },
-  {
-    "discordId": "316968345381634060",
+  "316968345381634060": {
     "raUsername": "Supra62",
     "raApiKey": "bZ65IBV9sSHlZhPFwmkq7garcMhKwLYs",
-    "lastAchievement": 307055,
+    "lastAchievement": 0,
     "color": "#ffffff",
     "aotwUnlocked": false,
     "aotmUnlocked": false,
     "background": 0
   }
-]
+}

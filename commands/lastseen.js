@@ -1,6 +1,6 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { buildAuthorization, getUserSummary } from '@retroachievements/api';
-import { getUsers } from '../db.js';
+import { loadDB } from '../db.js';
 
 export default {
   data: new SlashCommandBuilder()
@@ -17,7 +17,8 @@ export default {
     const inputUsername = interaction.options.getString('username');
     const discordId = interaction.user.id;
 
-    const user = getUsers().find(u => u.discordId === discordId);
+    const usersDB = loadDB('usersdb');
+    const user = usersDB[discordId];
     const raUsername = inputUsername || user?.raUsername;
     const raApiKey = user?.raApiKey;
 
