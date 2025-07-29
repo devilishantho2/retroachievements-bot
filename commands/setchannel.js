@@ -1,5 +1,5 @@
 // commands/setchannel.js
-import { SlashCommandBuilder, PermissionFlagsBits } from 'discord.js';
+import { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } from 'discord.js';
 import { loadDB, saveDB } from '../db.js';
 
 export default {
@@ -30,7 +30,7 @@ export default {
 
     await interaction.reply({
       content: `✅ Salon défini avec succès. Les succès seront désormais envoyés ici.`,
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
   }
 };

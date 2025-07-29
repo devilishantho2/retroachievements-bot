@@ -20,12 +20,7 @@ try {
   console.log('⏳ Déploiement des commandes…');
 
   await rest.put(
-    Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID),
-    { body: commands }
-  );
-
-  await rest.put(
-    Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID2),
+    Routes.applicationCommands(process.env.CLIENT_ID),
     { body: commands }
   );
 
