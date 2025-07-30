@@ -1,5 +1,5 @@
 import { SlashCommandBuilder, MessageFlags } from 'discord.js';
-import { loadDB } from '../db.js'; // ou ton chemin vers la fonction loadDB
+import { loadDB } from '../db.js';
 import { generateAchievementImage } from '../generateImage.js';
 
 export default {
@@ -15,13 +15,13 @@ export default {
     ),
 
   async execute(interaction) {
-    const usersDB = loadDB('usersdb'); // charge users.json
+    const usersDB = loadDB('usersdb');
     const user = usersDB[interaction.user.id];
 
     if (!user) {
       return interaction.reply({
         content: 'Utilisateur non enregistré.',
-        flags: MessageFlags.Ephemeral
+        ephemeral: true
       });
     }
 
@@ -42,10 +42,8 @@ export default {
       hardcore: true
     });
 
-    await interaction.channel.send({
+    await interaction.editReply({
       files: [{ attachment: imageBuffer, name: 'achievement.png' }]
     });
-
-    await interaction.deleteReply();
   },
 };
