@@ -13,6 +13,7 @@ import {
   getAotwInfo,
   setAotmUnlocked,
   getAotmInfo,
+  incrementApiCallCount,
 } from './db.js';
 import {
   buildAuthorization,
@@ -46,20 +47,22 @@ client.on('interactionCreate', async interaction => {
   }
 });
 
-let logChannel = null;
 async function log(message) {
-  console.log(message);
+  const now = new Date();
+  const time = now.toTimeString().split(' ')[0];
+  const prefix = `${time} - `;
+  const fullMessage = typeof message === 'string'
+    ? `${prefix}${message}`
+    : `${prefix}📝 Log : ${message instanceof Error ? message.stack : JSON.stringify(message)}`;
+
+  console.log(fullMessage);
+
   try {
-    if (!logChannel) {
-      const guild = await client.guilds.fetch(process.env.LOG_GUILD_ID);
-      logChannel = await guild.channels.fetch(process.env.LOG_CHANNEL_ID);
-    }
-    const finalMessage = typeof message === 'string'
-      ? message
-      : '📝 Log : ' + (message instanceof Error ? message.stack : JSON.stringify(message));
-    await logChannel.send(finalMessage.slice(0, 2000));
+    const guild = await client.guilds.fetch(process.env.LOG_GUILD_ID);
+    const channel = await guild.channels.fetch(process.env.LOG_CHANNEL_ID);
+    await channel.send(fullMessage.slice(0, 2000));
   } catch (err) {
-    console.error('❌ Erreur log Discord :', err);
+    console.error(`${prefix}❌ Erreur log Discord :`, err);
   }
 }
 
@@ -72,7 +75,6 @@ function updatePresence(client) {
   });
 }
 
-// 🔁 Retry avec backoff exponentiel (inchangé)
 async function retry(fn, retries = 3, delay = 500, userLabel = '') {
   let attempt = 0;
   while (attempt < retries) {
@@ -112,19 +114,21 @@ async function fetchAndStoreAotw() {
   }
 }
 
-// *** Fonction modifiée pour gérer multi-guildes et nouvelle DB ***
+const userCheckState = {};
 
 async function checkAllUsers() {
-  const guildsDB = loadDB('guildsdb'); // objet { guildId: { channel, users: [discordId] } }
-  const usersDB = loadDB('usersdb');   // objet { discordId: { raUsername, raApiKey, lastAchievement, ... } }
+  const guildsDB = loadDB('guildsdb');
+  const usersDB = loadDB('usersdb');
   const aotw = getAotwInfo();
   const aotm = getAotmInfo();
+  const now = Date.now();
 
   for (const [guildId, guildData] of Object.entries(guildsDB)) {
     if (!guildData.channel || guildData.channel === 0) {
       log(`⚠️ Guild ${guildId} sans salon défini, on skip.`);
       continue;
     }
+
     let channel;
     try {
       channel = await client.channels.fetch(guildData.channel.toString());
@@ -140,32 +144,66 @@ async function checkAllUsers() {
         continue;
       }
 
-      const authorization = buildAuthorization({ username: user.raUsername, webApiKey: user.raApiKey });
+      if (!userCheckState[discordId]) {
+        userCheckState[discordId] = {
+          lastAchievementTime: 0,
+          nextCheckTime: 0
+        };
+      }
 
-      let allRecent, summary;
+      const nextCheck = userCheckState[discordId].nextCheckTime;
+      if (now < nextCheck) continue;
+
+      const authorization = buildAuthorization({
+        username: user.raUsername,
+        webApiKey: user.raApiKey
+      });
+
+      let allRecent;
       try {
-        // On récupère les succès récents et résumé
         allRecent = await retry(() =>
           getUserRecentAchievements(authorization, { username: user.raUsername }),
           3, 500, user.raUsername
         );
-        summary = await retry(() =>
-          getUserSummary(authorization, { username: user.raUsername, recentGamesCount: 3 }),
-          3, 500, user.raUsername
-        );
+        incrementApiCallCount();
       } catch (err) {
-        continue; // erreur déjà loguée
+        userCheckState[discordId].nextCheckTime = now + 5 * 60 * 1000;
+        continue;
       }
 
-      if (!allRecent || allRecent.length === 0) continue;
+      if (!allRecent || allRecent.length === 0) {
+        const last = userCheckState[discordId].lastAchievementTime;
+        userCheckState[discordId].nextCheckTime = now + (now - last > 60 * 60 * 1000 ? 5 * 60 * 1000 : 30 * 1000);
+        continue;
+      }
 
       const newAchievements = [];
       for (const achievement of allRecent) {
         if (achievement.achievementId === user.lastAchievement) break;
         newAchievements.push(achievement);
       }
-      if (newAchievements.length === 0) continue;
+
+      if (newAchievements.length === 0) {
+        userCheckState[discordId].nextCheckTime = now + 30 * 1000;
+        continue;
+      }
+
+      let summary;
+      try {
+        summary = await retry(() =>
+          getUserSummary(authorization, { username: user.raUsername, recentGamesCount: 3 }),
+          3, 500, user.raUsername
+        );
+        incrementApiCallCount();
+      } catch (err) {
+        log(`⚠️ Impossible de récupérer le résumé pour ${user.raUsername}, on saute les notifs.`);
+        userCheckState[discordId].nextCheckTime = now + 5 * 60 * 1000;
+        continue;
+      }
+
       newAchievements.reverse();
+      userCheckState[discordId].lastAchievementTime = now;
+      userCheckState[discordId].nextCheckTime = now + 30 * 1000;
 
       for (const achievement of newAchievements) {
         const gameAward = summary.awarded?.[achievement.gameId];
@@ -191,7 +229,7 @@ async function checkAllUsers() {
             files: [{ attachment: imageBuffer, name: 'achievement.png' }]
           });
         } else {
-          log(`📎 ${user.raUsername} → succès ${achievement.achievementId} ignoré pour envoi (percent = 0)`);
+          log(`📎 ${user.raUsername} → succès ${achievement.achievementId} ignoré (0%)`);
         }
 
         log(`✅ ${user.raUsername} → succès ${achievement.achievementId} (${percent}%)`);
@@ -224,33 +262,57 @@ async function checkAllUsers() {
 
         setLastAchievement(discordId, achievement.achievementId);
       }
+
+      // 🔁 Vérification des jeux masterisés
+      const achievedPerGame = {};
+      for (const a of newAchievements) {
+        achievedPerGame[a.gameId] = (achievedPerGame[a.gameId] || 0) + 1;
+      }
+
+      for (const [gameId, _] of Object.entries(achievedPerGame)) {
+        const gameAward = summary.awarded?.[gameId];
+        const total = gameAward?.numPossibleAchievements || 0;
+        const hardcore = gameAward?.numAchievedHardcore || 0;
+
+        if (hardcore === total && total > 0) {
+          const gameInfo = summary.recentlyPlayed?.find(g => g.gameId.toString() === gameId);
+          const gameTitle = gameInfo?.title || `Jeu ${gameId}`;
+          const consoleName = gameInfo?.consoleName || '';
+          const boxArtUrl = gameInfo?.imageBoxArt
+            ? `https://retroachievements.org${gameInfo.imageBoxArt}`
+            : null;
+
+          await channel.send({
+            embeds: [{
+              title: `🎮 Jeu masterisé !`,
+              description: `**${user.raUsername}** a masterisé le jeu **${gameTitle}** ${consoleName ? `(${consoleName})` : ''}`,
+              color: 0xf1c40f,
+              footer: { text: `Masterisé avec ${hardcore}/${total} succès en mode hardcore` },
+              timestamp: new Date(),
+              image: boxArtUrl ? { url: boxArtUrl } : undefined,
+            }]
+          });
+
+          log(`🏅 ${user.raUsername} a masterisé ${gameTitle}`);
+        }
+      }
     }
   }
-}
+};
 
 client.once('ready', async () => {
   log(`🤖 Connecté en tant que ${client.user.tag}`);
 
-  // Affiche la liste des guilds et leur salons pour debug
-  const guildsDB = loadDB('guildsdb');
-
-  updatePresence(client); // Mise à jour initiale
-
-  // Met à jour la présence toutes les 5 minutes
+  updatePresence(client);
   setInterval(() => updatePresence(client), 10 * 60 * 1000);
-
-  // Ne pas fetch AOTW ici pour ne pas écraser la donnée actuelle
-  // fetchAndStoreAotw();
 
   await checkAllUsers();
   cron.schedule('*/30 * * * * *', checkAllUsers);
 
-  // Cron hebdo AOTW lundi 5h
   cron.schedule('0 5 * * 1', async () => {
     log('⏰ Lancement du cron hebdo pour mise à jour AOTW');
     await fetchAndStoreAotw();
   });
 });
-
 
 client.login(process.env.DISCORD_TOKEN);
