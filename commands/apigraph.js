@@ -6,11 +6,10 @@ import { registerFont } from 'canvas';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 
-// Résolution __dirname dans module ES
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Police depuis root/fonts (hors dossier commands)
+// Charge la police personnalisée
 registerFont(path.join(__dirname, '..', 'fonts', 'PixelOperatorHB.ttf'), {
   family: 'Pixel Operator HB Normal',
 });
@@ -18,40 +17,33 @@ registerFont(path.join(__dirname, '..', 'fonts', 'PixelOperatorHB.ttf'), {
 export default {
   data: new SlashCommandBuilder()
     .setName('apigraph')
-    .setDescription("Affiche un graphique des requêtes API dans la journée"),
+    .setDescription("Affiche un graphique des requêtes API")
+    .addStringOption(option =>
+      option.setName('type')
+        .setDescription("Afficher les requêtes du 'jour' ou du 'mois'")
+        .setRequired(true)
+        .addChoices(
+          { name: 'jour', value: 'jour' },
+          { name: 'mois', value: 'mois' }
+        )
+    ),
 
   async execute(interaction) {
     await interaction.deferReply();
 
+    const type = interaction.options.getString('type');
     const filePath = path.join('data', 'api.json');
+
     if (!fs.existsSync(filePath)) {
-      return interaction.editReply("❌ Fichier de données `api.json` introuvable.");
+      return interaction.editReply("❌ Fichier `api.json` introuvable.");
     }
 
     const rawData = fs.readFileSync(filePath, 'utf-8');
     const apiData = JSON.parse(rawData);
-
-    const today = new Date();
-    const key = today.toLocaleDateString('fr-FR'); // ex: "30/07/2025"
-    const hours = Array.from({ length: 24 }, (_, i) => `${i}h`);
-
-    if (!apiData[key]) {
-      return interaction.editReply(`📉 Aucune donnée trouvée pour aujourd’hui (${key}).`);
-    }
-
-    const todayData = apiData[key];
-    const labels = [];
-    const values = [];
-
-    for (let i = 0; i < 24; i++) {
-      const hour = `${i}h`;
-      labels.push(hour);
-      values.push(todayData[hour] ?? null);
-    }
+    const now = new Date();
 
     const width = 1100;
     const height = 600;
-
     const chartJSNodeCanvas = new ChartJSNodeCanvas({
       width,
       height,
@@ -61,6 +53,52 @@ export default {
         ChartJS.defaults.font.size = 14;
       }
     });
+
+    let labels = [];
+    let values = [];
+    let chartTitle = '';
+
+    if (type === 'jour') {
+      const todayKey = now.toLocaleDateString('fr-FR'); // ex: "31/07/2025"
+      const currentHour = now.getHours();
+      const todayData = apiData[todayKey] ?? {};
+
+      labels = Array.from({ length: 24 }, (_, i) => `${i}h`);
+      values = labels.map((hour, i) => {
+        // Inclure jusqu'à l'heure en cours (y compris)
+        return i <= currentHour ? todayData[hour] ?? null : null;
+      });
+
+      if (values.every(v => v === null)) {
+        return interaction.editReply("📉 Aucune donnée disponible pour aujourd’hui.");
+      }
+
+      chartTitle = `Requêtes API aujourd’hui (${todayKey})`;
+    }
+
+    if (type === 'mois') {
+      const year = now.getFullYear();
+      const month = now.getMonth(); // 0-based
+      const monthStr = `${String(month + 1).padStart(2, '0')}/${year}`;
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+      labels = Array.from({ length: daysInMonth }, (_, i) => `${i + 1}`);
+      values = [];
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dayKey = `${String(day).padStart(2, '0')}/${String(month + 1).padStart(2, '0')}/${year}`;
+        const dayData = apiData[dayKey];
+
+        if (dayData) {
+          const total = Object.values(dayData).reduce((sum, val) => sum + val, 0);
+          values.push(total);
+        } else {
+          values.push(null); // Trou vide dans la courbe
+        }
+      }
+
+      chartTitle = `Requêtes API en ${monthStr}`;
+    }
 
     const configuration = {
       type: 'line',
@@ -79,7 +117,7 @@ export default {
       options: {
         layout: {
           padding: {
-            top: 0,
+            top: 10,
             bottom: 25,
             left: 25,
             right: 25
@@ -88,20 +126,20 @@ export default {
         scales: {
           x: {
             ticks: { color: 'white' },
-            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+            grid: { color: 'rgba(255,255,255,0.1)' },
             title: { display: false }
           },
           y: {
             beginAtZero: true,
             ticks: { color: 'white' },
-            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+            grid: { color: 'rgba(255,255,255,0.1)' },
             title: { display: false }
           }
         },
         plugins: {
           title: {
             display: true,
-            text: `Requêtes API (${key})`,
+            text: chartTitle,
             color: 'white',
             font: {
               size: 20,
@@ -115,8 +153,8 @@ export default {
       }
     };
 
-    const imageBuffer = await chartJSNodeCanvas.renderToBuffer(configuration);
-    const attachment = new AttachmentBuilder(imageBuffer, { name: 'api_graph.png' });
+    const buffer = await chartJSNodeCanvas.renderToBuffer(configuration);
+    const attachment = new AttachmentBuilder(buffer, { name: 'api_graph.png' });
 
     await interaction.editReply({ files: [attachment] });
   }
