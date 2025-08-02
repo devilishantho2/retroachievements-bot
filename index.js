@@ -25,6 +25,10 @@ import { generateAchievementImage } from './generateImage.js';
 
 config();
 
+const FAST_DELAY = 30*1000;
+const SLOW_DELAY = 5*60*1000;
+const ONLINE_DELAY = 5*60*1000;
+
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 client.commands = new Collection();
 
@@ -123,13 +127,14 @@ async function checkAllUsers() {
   const aotm = getAotmInfo();
   const now = Date.now();
 
-  for (const [guildId, guildData] of Object.entries(guildsDB)) {
-    if (!guildData.channel || guildData.channel === 0) {
+  for (const [guildId, guildData] of Object.entries(guildsDB)) {                                                                //FOR ALL GUILDS
+
+    if (!guildData.channel || guildData.channel === 0) {                                                                        //CHECK SI CHANNEL DEFINI
       log(`⚠️ Guild ${guildId} sans salon défini, on skip.`);
       continue;
     }
 
-    let channel;
+    let channel;                                                                                                                //CHECK SI CHANNEL ACCESSIBLE
     try {
       channel = await client.channels.fetch(guildData.channel.toString());
     } catch (e) {
@@ -137,73 +142,190 @@ async function checkAllUsers() {
       continue;
     }
 
-    for (const discordId of guildData.users) {
+    for (const discordId of guildData.users) {                                                                                  //FOR ALL USERS
+      const newAchievements = [];
+      let summary;
       const user = usersDB[discordId];
       if (!user) {
         log(`⚠️ Utilisateur ${discordId} listé dans guild ${guildId} mais absent de usersDB`);
         continue;
       }
 
-      if (!userCheckState[discordId]) {
+      if (!userCheckState[discordId]) {                                                                                         //CREE DONNEES SI INEXISTANTES
         userCheckState[discordId] = {
           lastAchievementTime: 0,
-          nextCheckTime: 0
+          nextCheckTime: 0,
+          nextOnlineCheckTime: 0,
+          isFastPolling: false,
+          isSummaryReady: false
         };
       }
 
-      const nextCheck = userCheckState[discordId].nextCheckTime;
-      if (now < nextCheck) continue;
+      const nextCheck = userCheckState[discordId].nextCheckTime;                                                                //RECUPERE LES DONNEES
+      const nextOnlineCheck = userCheckState[discordId].nextOnlineCheckTime;
+      const fastpolling = userCheckState[discordId].isFastPolling;
+      const summaryready = userCheckState[discordId].isSummaryReady;
+      userCheckState[discordId].isSummaryReady = false;
 
-      const authorization = buildAuthorization({
-        username: user.raUsername,
-        webApiKey: user.raApiKey
-      });
+      if (!fastpolling) {                                                                                                               //SI LENT
+        if (now < nextCheck) continue;                                                                                          //SI PAS ENCORE BESOIN DE CHECK SKIP
 
-      let allRecent;
-      try {
-        allRecent = await retry(() =>
-          getUserRecentAchievements(authorization, { username: user.raUsername }),
-          3, 500, user.raUsername
-        );
-        incrementApiCallCount();
-      } catch (err) {
-        userCheckState[discordId].nextCheckTime = now + 5 * 60 * 1000;
-        continue;
+        const authorization = buildAuthorization({                                                                              //BUILD AUTHORIZATION
+          username: user.raUsername,
+          webApiKey: user.raApiKey
+        });
+  
+        let allRecent;                                                                                                          //GET RECENT CHEEVOS
+        try {
+          allRecent = await retry(() =>
+            getUserRecentAchievements(authorization, { username: user.raUsername }),
+            3, 500, user.raUsername
+          );
+          incrementApiCallCount();
+        } catch (err) {
+          userCheckState[discordId].nextCheckTime = now + SLOW_DELAY;
+          continue;
+        }
+  
+        if (!allRecent || allRecent.length === 0) {                                                                             //SI AUCUN RECENT SKIP
+          userCheckState[discordId].nextCheckTime = now + SLOW_DELAY;
+          continue;
+        }
+
+        for (const achievement of allRecent) {                                                                                  //MISE EN FORME DES CHEEVOS RECENT
+          if (achievement.achievementId === user.lastAchievement) break;
+          newAchievements.push(achievement);
+        }
+  
+        if (newAchievements.length === 0) {                                                                                     //SI AUCUN NOUVEAU CHEEVOS SKIP
+          userCheckState[discordId].nextCheckTime = now + SLOW_DELAY;
+          continue;
+        }
+        newAchievements.reverse();
+                                                              
+        try {                                                                                                                   //GET SUMMARY             
+          summary = await retry(() =>
+            getUserSummary(authorization, { username: user.raUsername, recentGamesCount: 3 }),
+            3, 500, user.raUsername
+          );
+          incrementApiCallCount();
+        } catch (err) {
+          log(`⚠️ Impossible de récupérer le résumé pour ${user.raUsername}, on saute les notifs.`);
+          userCheckState[discordId].nextCheckTime = now + SLOW_DELAY;
+          continue;
+        }
+  
+        userCheckState[discordId].lastAchievementTime = now;                                                                    //SET DELAY (FAST)
+        userCheckState[discordId].nextCheckTime = now + FAST_DELAY;
+        userCheckState[discordId].nextOnlineCheckTime = now + ONLINE_DELAY;
+        userCheckState[discordId].isFastPolling = true;
+
       }
 
-      if (!allRecent || allRecent.length === 0) {
-        const last = userCheckState[discordId].lastAchievementTime;
-        userCheckState[discordId].nextCheckTime = now + (now - last > 60 * 60 * 1000 ? 5 * 60 * 1000 : 30 * 1000);
-        continue;
-      }
+      else if (fastpolling) {                                                                                                           //SI RAPIDE
+        console.log(`${discordId} is fast polling`);
+        if (now < nextCheck && now < nextOnlineCheck) continue;                                                             //SI PAS ENCORE BESOIN DE CHECK (les 2) SKIP
+        console.log("let's go check en mode rapide");
 
-      const newAchievements = [];
-      for (const achievement of allRecent) {
-        if (achievement.achievementId === user.lastAchievement) break;
-        newAchievements.push(achievement);
-      }
+        if (now >= nextOnlineCheck) {                                                                                                   //SI ONLINE CHECK
 
-      if (newAchievements.length === 0) {
-        userCheckState[discordId].nextCheckTime = now + 30 * 1000;
-        continue;
-      }
+          const authorization = buildAuthorization({                                                                        //BUILD AUTHORIZATION
+            username: user.raUsername,
+            webApiKey: user.raApiKey
+          });
 
-      let summary;
-      try {
-        summary = await retry(() =>
-          getUserSummary(authorization, { username: user.raUsername, recentGamesCount: 3 }),
-          3, 500, user.raUsername
-        );
-        incrementApiCallCount();
-      } catch (err) {
-        log(`⚠️ Impossible de récupérer le résumé pour ${user.raUsername}, on saute les notifs.`);
-        userCheckState[discordId].nextCheckTime = now + 5 * 60 * 1000;
-        continue;
-      }
+          let summary;                                                                                                      //GET SUMMARY                                                                           
+          try {
+              summary = await retry(() =>
+              getUserSummary(authorization, { username: user.raUsername, recentGamesCount: 3 }),
+              3, 500, user.raUsername
+              );
+              incrementApiCallCount();
+              userCheckState[discordId].isSummaryReady = true;                                                              //SUMMARY IS READY
+              userCheckState[discordId].nextOnlineCheckTime = now + ONLINE_DELAY;
+          } catch (err) {
+              log(`⚠️ Impossible de récupérer le résumé pour ${user.raUsername}, on saute les notifs.`);
+              userCheckState[discordId].nextCheckTime = now + SLOW_DELAY;
+              userCheckState[discordId].isFastPolling = false;
+              continue;
+          }
+          const lastPlayed = summary.recentlyPlayed?.[0]?.lastPlayed;
+          const lastPlayedTime = lastPlayed ? new Date(lastPlayed + ' UTC').getTime() : 0;
+          const timeSinceLastPlayed = now - lastPlayedTime;
 
-      newAchievements.reverse();
-      userCheckState[discordId].lastAchievementTime = now;
-      userCheckState[discordId].nextCheckTime = now + 30 * 1000;
+          if (timeSinceLastPlayed >= 3 * 60 * 1000) {                                                                       //SI OFFLINE
+
+            userCheckState[discordId].isFastPolling = false;
+            console.log(`UPDATE ${discordId} is slow polling`);
+            userCheckState[discordId].nextCheckTime = now + SLOW_DELAY;
+            continue;
+
+          }
+  
+        }
+
+        if (now >= nextCheck) {                                                                                                             //SI CHECK
+
+            const authorization = buildAuthorization({                                                                          //BUILD AUTHORIZATION
+                username: user.raUsername,
+                webApiKey: user.raApiKey
+              });
+        
+              let allRecent;                                                                                                    //GET RECENT CHEEVOS
+              try {
+                allRecent = await retry(() =>
+                  getUserRecentAchievements(authorization, { username: user.raUsername }),
+                  3, 500, user.raUsername
+                );
+                incrementApiCallCount();
+              } catch (err) {
+                userCheckState[discordId].nextCheckTime = now + SLOW_DELAY;
+                userCheckState[discordId].isFastPolling = false;
+                continue;
+              }
+        
+              if (!allRecent || allRecent.length === 0) {                                                                       //SI AUCUN RECENT SKIP
+                userCheckState[discordId].nextCheckTime = now + SLOW_DELAY;
+                userCheckState[discordId].isFastPolling = false;
+                console.log(`UPDATE ${discordId} is slow polling`);
+                continue;
+              }
+        
+              const newAchievements = [];                                                                                       //MISE EN FORME DES CHEEVOS RECENT
+              for (const achievement of allRecent) {
+                if (achievement.achievementId === user.lastAchievement) break;
+                newAchievements.push(achievement);
+              }
+        
+              if (newAchievements.length === 0) {                                                                               //SI AUCUN NOUVEAU CHEEVOS SKIP
+                userCheckState[discordId].nextCheckTime = now + FAST_DELAY;
+                continue;
+              }
+              newAchievements.reverse();
+      
+              if (!summaryready) {
+
+                let summary;                                                                                                      //GET SUMMARY                                                                           
+                try {
+                    summary = await retry(() =>
+                    getUserSummary(authorization, { username: user.raUsername, recentGamesCount: 3 }),
+                    3, 500, user.raUsername
+                    );
+                    incrementApiCallCount();
+                } catch (err) {
+                    log(`⚠️ Impossible de récupérer le résumé pour ${user.raUsername}, on saute les notifs.`);
+                    userCheckState[discordId].nextCheckTime = now + SLOW_DELAY;
+                    userCheckState[discordId].isFastPolling = false;
+                    continue;
+                }
+
+              }
+              userCheckState[discordId].lastAchievementTime = now;                                                              //SET DELAY (FAST)
+              userCheckState[discordId].nextCheckTime = now + FAST_DELAY;
+        }
+
+      };
+
 
       for (const achievement of newAchievements) {
         const gameAward = summary.awarded?.[achievement.gameId];
@@ -307,7 +429,7 @@ client.once('ready', async () => {
   setInterval(() => updatePresence(client), 10 * 60 * 1000);
 
   await checkAllUsers();
-  cron.schedule('*/30 * * * * *', checkAllUsers);
+  cron.schedule('*/10 * * * * *', checkAllUsers);
 
   cron.schedule('0 5 * * 1', async () => {
     log('⏰ Lancement du cron hebdo pour mise à jour AOTW');
