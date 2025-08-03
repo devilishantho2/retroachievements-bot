@@ -28,6 +28,7 @@ config();
 const FAST_DELAY = 30*1000;
 const SLOW_DELAY = 5*60*1000;
 const ONLINE_DELAY = 5*60*1000;
+const OFFLINE_TIME = 3*60*1000;
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 client.commands = new Collection();
@@ -168,6 +169,7 @@ async function checkAllUsers() {
       userCheckState[discordId].isSummaryReady = false;
 
       if (!fastpolling) {                                                                                                               //SI LENT
+        
         if (now < nextCheck) continue;                                                                                          //SI PAS ENCORE BESOIN DE CHECK SKIP
 
         const authorization = buildAuthorization({                                                                              //BUILD AUTHORIZATION
@@ -223,9 +225,8 @@ async function checkAllUsers() {
       }
 
       else if (fastpolling) {                                                                                                           //SI RAPIDE
-        console.log(`${discordId} is fast polling`);
+        
         if (now < nextCheck && now < nextOnlineCheck) continue;                                                             //SI PAS ENCORE BESOIN DE CHECK (les 2) SKIP
-        console.log("let's go check en mode rapide");
 
         if (now >= nextOnlineCheck) {                                                                                                   //SI ONLINE CHECK
 
@@ -233,9 +234,8 @@ async function checkAllUsers() {
             username: user.raUsername,
             webApiKey: user.raApiKey
           });
-
-          let summary;                                                                                                      //GET SUMMARY                                                                           
-          try {
+                                                                           
+          try {                                                                                                             //GET SUMMARY         
               summary = await retry(() =>
               getUserSummary(authorization, { username: user.raUsername, recentGamesCount: 3 }),
               3, 500, user.raUsername
@@ -253,7 +253,7 @@ async function checkAllUsers() {
           const lastPlayedTime = lastPlayed ? new Date(lastPlayed + ' UTC').getTime() : 0;
           const timeSinceLastPlayed = now - lastPlayedTime;
 
-          if (timeSinceLastPlayed >= 3 * 60 * 1000) {                                                                       //SI OFFLINE
+          if (timeSinceLastPlayed >= OFFLINE_TIME) {                                                                       //SI OFFLINE
 
             userCheckState[discordId].isFastPolling = false;
             console.log(`UPDATE ${discordId} is slow polling`);
@@ -290,9 +290,8 @@ async function checkAllUsers() {
                 console.log(`UPDATE ${discordId} is slow polling`);
                 continue;
               }
-        
-              const newAchievements = [];                                                                                       //MISE EN FORME DES CHEEVOS RECENT
-              for (const achievement of allRecent) {
+                                                                                         
+              for (const achievement of allRecent) {                                                                          //MISE EN FORME DES CHEEVOS RECENT
                 if (achievement.achievementId === user.lastAchievement) break;
                 newAchievements.push(achievement);
               }
@@ -304,9 +303,8 @@ async function checkAllUsers() {
               newAchievements.reverse();
       
               if (!summaryready) {
-
-                let summary;                                                                                                      //GET SUMMARY                                                                           
-                try {
+                                                                                                                                                                    
+                try {                                                                                                           //GET SUMMARY            
                     summary = await retry(() =>
                     getUserSummary(authorization, { username: user.raUsername, recentGamesCount: 3 }),
                     3, 500, user.raUsername
