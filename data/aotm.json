@@ -1,12 +1,12 @@
 {
-  "id": 401704,
-  "title": "Taste Tester",
-  "description": "[Episode I] Complete Addicting Food on Normal difficulty",
+  "id": 519326,
+  "title": "Trials of the Satyr",
+  "description": "Complete the Phil Cup at the Olympus Coliseum.",
   "points": 5,
-  "gameTitle": "Phantasy Star Online Episode I & II Plus",
-  "dateCreated": "2024-02-24",
+  "gameTitle": "Kingdom Hearts",
+  "dateCreated": "2025-05-11",
   "game": {
-    "id": 9190,
-    "title": "Phantasy Star Online Episode I & II Plus"
+    "id": 32650,
+    "title": "Kingdom Hearts"
   }
 }
