@@ -47,6 +47,7 @@ export function addUser(discordId, guildId, data) {
     // Création d'une nouvelle guilde
     guildsDB[guildId] = {
       channel: 0,
+      lang: "en",
       users: []
     };
   }

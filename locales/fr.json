@@ -1,0 +1,13 @@
+{
+    "aotwUnlockedTitle": "🎉 AOTW débloqué !",
+    "aotwUnlockedDesc": "**{username}** a débloqué le succès de la semaine : **{title}** !",
+    "aotmUnlockedTitle": "🏅 AOTM débloqué !",
+    "aotmUnlockedDesc": "**{username}** a débloqué le succès du mois : **{title}** !",
+    "gameMasteredTitle": "🎮 Jeu masterisé !",
+    "gameMasteredDesc": "**{username}** a masterisé le jeu **{gameTitle}** {consoleName}",
+    "gameMasteredFooter": "Masterisé avec {hardcore}/{total} succès en mode hardcore",
+
+    "unlockHeader": "{username} vient de débloquer :",
+    "gameTitle": "Jeu : {gameTitle} | {progressPercent}%"
+  }
+  

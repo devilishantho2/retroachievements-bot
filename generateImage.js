@@ -1,6 +1,7 @@
   import path from 'path';
   import { fileURLToPath } from 'url';
   import { createCanvas, loadImage, registerFont } from 'canvas';
+  import { t } from './locales.js';
 
   // Pour __dirname compatible ES modules
   const __filename = fileURLToPath(import.meta.url);
@@ -29,7 +30,8 @@
     progressPercent,
     backgroundImage,
     textColor,
-    hardcore = false
+    hardcore = false,
+    lang = "en"
   }) {
     const width = 800;
     const height = 250;
@@ -122,13 +124,13 @@
     ctx.fillText(titleText, titleX, titleY);
     
     ctx.font = '24px "Pixel Operator HB Normal"';
-    ctx.fillText(`${username} vient de débloquer :`, 20, 90);
+    ctx.fillText(t(lang, 'unlockHeader', { username: username }), 20, 90);
 
     ctx.font = '20px "Pixel Operator HB Normal"';
     wrapTextSkewed(ctx, `« ${description} »`, 20, 130, width - 40 - 160, 26, -0.2);
 
     ctx.font = '22px "Pixel Operator HB Normal"';
-    ctx.fillText(`Jeu : ${gameTitle} | ${progressPercent}%`, 20, height - 20);
+    ctx.fillText(t(lang, 'gameTitle', { gameTitle: gameTitle, progressPercent: progressPercent}), 20, height - 20);
 
     // 🎖️ Badge + barre de progression
     try {

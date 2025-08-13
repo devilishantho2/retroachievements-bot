@@ -22,6 +22,7 @@ import {
   getAchievementOfTheWeek,
 } from '@retroachievements/api';
 import { generateAchievementImage } from './generateImage.js';
+import { t } from './locales.js';
 
 config();
 
@@ -170,6 +171,9 @@ async function checkAllUsers() {
   const now = Date.now();
 
   for (const [guildId, guildData] of Object.entries(guildsDB)) {
+
+    const lang = guildData.lang || 'en';
+
     if (!guildData.channel || guildData.channel === 0) {
       log(`⚠️ Guild ${guildId} sans salon défini, on skip.`);
       continue;
@@ -290,7 +294,6 @@ async function checkAllUsers() {
 
           if (timeSinceLastPlayed >= OFFLINE_TIME) {
             userCheckState[discordId].isFastPolling = false;
-            console.log(`UPDATE ${discordId} is slow polling`);
             userCheckState[discordId].nextCheckTime = now + SLOW_DELAY;
             continue;
           }
@@ -319,7 +322,6 @@ async function checkAllUsers() {
               if (!allRecent || allRecent.length === 0) {
                 userCheckState[discordId].nextCheckTime = now + SLOW_DELAY;
                 userCheckState[discordId].isFastPolling = false;
-                console.log(`UPDATE ${discordId} is slow polling`);
                 continue;
               }
                                                                                          
@@ -370,7 +372,8 @@ async function checkAllUsers() {
             progressPercent: percent,
             backgroundImage: user.background,
             textColor: user.color,
-            hardcore: achievement.hardcoreMode
+            hardcore: achievement.hardcoreMode,
+            lang: lang
           });
 
           await channel.send({
@@ -386,8 +389,8 @@ async function checkAllUsers() {
           setAotwUnlocked(discordId, true);
           await channel.send({
             embeds: [{
-              title: `🎉 AOTW débloqué !`,
-              description: `**${user.raUsername}** a débloqué le succès de la semaine : **${aotw.title}** !`,
+              title: t(lang, 'aotwUnlockedTitle'),
+              description: t(lang, 'aotwUnlockedDesc', { username: user.raUsername, title: aotw.title }),
               color: 0x2ecc71,
               thumbnail: { url: `https://media.retroachievements.org${aotw.game.boxArt}` },
             }]
@@ -399,8 +402,8 @@ async function checkAllUsers() {
           setAotmUnlocked(discordId, true);
           await channel.send({
             embeds: [{
-              title: `🏅 AOTM débloqué !`,
-              description: `**${user.raUsername}** a débloqué le succès du mois : **${aotm.title}** !`,
+              title: t(lang, 'aotmUnlockedTitle'),
+              description: t(lang, 'aotmUnlockedDesc', { username: user.raUsername, title: aotw.title }),
               color: 0x3498db,
               thumbnail: { url: `https://media.retroachievements.org${aotm.game.boxArt}` },
             }]
@@ -431,10 +434,10 @@ async function checkAllUsers() {
 
           await channel.send({
             embeds: [{
-              title: `🎮 Jeu masterisé !`,
-              description: `**${user.raUsername}** a masterisé le jeu **${gameTitle}** ${consoleName ? `(${consoleName})` : ''}`,
+              title: t(lang, 'gameMasteredTitle'),
+              description: t(lang, 'gameMasteredDesc', { username: user.raUsername, gameTitle: gameTitle, consoleName: consoleName }),
               color: 0xf1c40f,
-              footer: { text: `Masterisé avec ${hardcore}/${total} succès en mode hardcore` },
+              footer: t(lang, 'gameMasteredFooter', { hardcore: hardcore, total: total }),
               timestamp: new Date(),
               image: boxArtUrl ? { url: boxArtUrl } : undefined,
             }]

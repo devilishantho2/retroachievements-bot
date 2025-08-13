@@ -37,6 +37,21 @@ export default {
       sub
         .setName('clean')
         .setDescription('Retire tous les utilisateurs qui ne sont plus sur ce serveur.')
+    )
+    .addSubcommand(sub =>
+      sub
+        .setName('language')
+        .setDescription('Définit le langage du serveur')
+        .addStringOption(option =>
+          option
+            .setName('language')
+            .setDescription('Choix du langage')
+            .setRequired(true)
+            .addChoices(
+              { name: 'Français', value: 'fr' },
+              { name: 'English', value: 'en' }
+            )
+        )
     ),
 
   async execute(interaction) {
@@ -53,6 +68,7 @@ export default {
       if (!guildsDB[guildId]) {
         guildsDB[guildId] = {
           channel: channelId,
+          lang: "en",
           users: []
         };
       } else {
@@ -139,6 +155,29 @@ export default {
 
       return interaction.reply({
         content: `✅ Nettoyage effectué : ${removed.length} utilisateur(s) retiré(s) du serveur car ils n'y sont plus.`,
+        flags: MessageFlags.Ephemeral
+      });
+    }
+
+    // === /admin language ===
+    if (subcommand === 'language') {
+
+      const language = interaction.options.getString('language');
+
+      if (!guildsDB[guildId]) {
+        guildsDB[guildId] = {
+          channel: 0,
+          lang: language,
+          users: []
+        };
+      } else {
+        guildsDB[guildId].lang = language;
+      }
+
+      saveDB(guildsDB, 'guildsdb');
+
+      return interaction.reply({
+        content: `✅ Langue définie avec succès.`,
         flags: MessageFlags.Ephemeral
       });
     }

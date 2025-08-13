@@ -1,25 +1,122 @@
-import { SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder, EmbedBuilder, MessageFlags } from 'discord.js';
+import { SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder, EmbedBuilder, MessageFlags, Formatters } from 'discord.js';
+import { loadDB } from '../db.js';
 
-const BOT_VERSION = '1.0.0';
-const BOT_DESCRIPTION = '🤖 Bot RetroAchievements - Gestion des succès et stats des joueurs.';
+const BOT_VERSION = '1.2.5';
 
-const commandsInfo = {
-  ping: {
-    description: 'Renvoie le temps de réponse du bot.',
-    usage: '/ping',
-    details: 'Cette commande mesure la latence entre l\'envoi de la commande et la réponse du bot.'
+const commandText = { 
+  title: {
+    fr: 'Aide du Bot RetroAchievements',
+    en: 'RetroAchievements Bot Help'
   },
-  testcheevos: {
-    description: 'Affiche un succès pour tester les personnalisations.',
-    usage: '/testcheevos <points>',
-    details: 'Permet de générer une image de succès personnalisée avec le nombre de points spécifié.'
+  description: {
+    fr: '🤖 Bot RetroAchievements (non officiel) - Gestion des succès et stats des joueurs.\n\nPour démarrer, définissez un salon ou seront envoyés les succès (/admin setchannel), définissez la langue de votre serveur (/admin language), et dites à vos membres de se connecter (/register)\n\nBon jeu!',
+    en: '🤖 RetroAchievements Bot (unofficial) - Manages player achievements and stats.\n\nTo get started, set a channel where achievements will be sent (/admin setchannel), set your server\'s language (/admin language), and have your members register (/register)\n\nHave fun!'
   },
-  help: {
-    description: 'Affiche ce message d\'aide interactif.',
-    usage: '/help',
-    details: 'Affiche un embed avec les infos basiques du bot et un menu pour choisir une commande et en voir les détails.'
+  footer: {
+    fr: 'Sélectionne une commande dans le menu ci-dessous pour plus d\'infos.',
+    en: 'Select a command from the menu below for more information.' 
   }
 };
+
+const commandsInfo = {
+  register: {
+    fr: {
+      description: 'Enregistre l\'utilisateur sur le bot.',
+      usage: '/register <username> <apikey>',
+      details: 'Cette commande permet à l\'utilisateur de s\'enregistrer sur ce serveur, afin d\'envoyer ses succès récents dans le salon dédié. Prend en arguments le pseudo de l\'utilisateur sur RetroAchievements, et sa clé API (nécessaire pour récupérer les succès).'
+    },
+    en: {
+      description: 'Registers the user on the bot.',
+      usage: '/register <username> <apikey>',
+      details: 'This command allows the user to register on this server in order to send their recent achievements to the dedicated channel. Takes as arguments the user\'s RetroAchievements username and their API key (required to fetch achievements).'
+    }
+  },
+  leave: {
+    fr: {
+      description: 'Supprime l\'utilisateur du bot',
+      usage: '/leave bot/server',
+      details: 'Cette commande permet à l\'utilisateur de soit arréter les notifications sur le serveur sur lequel la commande est faite (/leave server) ou de quitter completement le bot, et donc tout les serveurs (/leave bot).'
+    },
+    en: {
+      description: 'Removes the user from the bot.',
+      usage: '/leave bot/server',
+      details: 'This command allows the user to either stop notifications on the server where the command is executed (/leave server) or to completely leave the bot and all servers (/leave bot).'
+    }
+  },
+  customize: {
+    fr: {
+      description: 'Permet à l\'utilisateur de customiser ses annonces.',
+      usage: '/customize background/color <url>/<color>',
+      details: 'Cette commande permet à l\'utilisateur de changer l\'image de fond de ses succès ainsi que la couleur du texte. Pour l\'image il faut un url valide (github ou imgur marche bien), pour la couleur il faut une couleur hexadécimal.'
+    },
+    en: {
+      description: 'Allows the user to customize their announcements.',
+      usage: '/customize background/color <url>/<color>',
+      details: 'This command allows the user to change the background image of their achievements as well as the text color. For the image, a valid URL is required (GitHub or Imgur work well), and for the color, a hexadecimal color code is needed.'
+    }
+  },
+  ping: {
+    fr: {
+      description: 'Renvoie le temps de réponse du bot.',
+      usage: '/ping',
+      details: 'Cette commande mesure la latence entre l\'envoi de la commande et la réponse du bot.'
+    },
+    en: {
+      description: 'Returns the bot\'s response time.',
+      usage: '/ping',
+      details: 'This command measures the latency between sending the command and the bot\'s response.'
+    }
+  },
+  testcheevos: {
+    fr: {
+      description: 'Affiche un succès pour tester les personnalisations.',
+      usage: '/testcheevos <points>',
+      details: 'Permet de générer une image de succès personnalisée avec le nombre de points spécifié, afin de montrer à l\'utilisateur à quoi cela ressemblera.'
+    },
+    en: {
+      description: 'Displays an achievement to test customizations.',
+      usage: '/testcheevos <points>',
+      details: 'Generates a custom achievement image with the specified number of points to show the user what it will look like.'
+    }
+  },
+  aotw: {
+    fr: {
+      description: 'Affiche le succès de la semaine.',
+      usage: '/aotw',
+      details: 'Cette commande affiche les détails du succès de la semaine.'
+    },
+    en: {
+      description: 'Displays the achievement of the week.',
+      usage: '/aotw',
+      details: 'This command displays the details of the achievement of the week.'
+    }
+  },
+  aotm: {
+    fr: {
+      description: 'Affiche le succès du mois.',
+      usage: '/aotm',
+      details: 'Cette commande affiche les détails du succès du mois.'
+    },
+    en: {
+      description: 'Displays the achievement of the month.',
+      usage: '/aotm',
+      details: 'This command displays the details of the achievement of the month.'
+    }
+  },
+  lastseen: {
+    fr: {
+      description: 'Affiche les dernières informations de jeu d\'un utilisateur.',
+      usage: '/lastseen <username>',
+      details: 'Cette commande affiche les dernieres informations de jeu d\'un utilisateur, ou les dernieres informations de jeu de l\'utilisateur.'
+    },
+    en: {
+      description: 'Displays the latest gaming information for a user.',
+      usage: '/lastseen <username>',
+      details: 'This command displays the latest gaming information for a specified user, or for the command sender if no username is given.'
+    }
+  }
+};
+
 
 export default {
   data: new SlashCommandBuilder()
@@ -27,13 +124,18 @@ export default {
     .setDescription('Affiche le menu d\'aide interactif'),
 
   async execute(interaction) {
-    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
+    const guildId = interaction.guild?.id;
+    const guildsDb = loadDB('guildsdb');
+    const lang = guildsDb[guildId]?.lang || 'en'; // 'en' par défaut
+    
+    
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
     const embed = new EmbedBuilder()
-      .setTitle('Aide du Bot RetroAchievements')
-      .setDescription(`${BOT_DESCRIPTION}\n\n**Version :** ${BOT_VERSION}`)
+      .setTitle(commandText.title[lang])
+      .setDescription(`${commandText.description[lang]}\n\n**Version :** ${BOT_VERSION}`)
       .setColor('Blue')
-      .setFooter({ text: 'Sélectionne une commande dans le menu ci-dessous pour plus d\'infos.' });
+      .setFooter({ text: commandText.footer[lang] });
 
     // Construction du menu déroulant
     const options = Object.entries(commandsInfo).map(([name, info]) => ({
@@ -61,7 +163,7 @@ export default {
 
     collector.on('collect', async i => {
       const cmdName = i.values[0];
-      const cmdInfo = commandsInfo[cmdName];
+      const cmdInfo = commandsInfo[cmdName][lang];
 
       const cmdEmbed = new EmbedBuilder()
         .setTitle(`Commande /${cmdName}`)
