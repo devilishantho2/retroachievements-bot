@@ -1,51 +1,42 @@
 // commands/admin.js
 import { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } from 'discord.js';
 import { loadDB, saveDB } from '../db.js';
+import { t } from '../locales.js';
 
 export default {
   data: new SlashCommandBuilder()
     .setName('admin')
-    .setDescription('Commandes administratives du bot')
+    .setDescription('Admin commands of the bot')
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .addSubcommand(sub =>
       sub
         .setName('setchannel')
-        .setDescription('Définit ce salon comme salon des notifications RetroAchievements.')
+        .setDescription('Set this channel as the RetroAchievements notifications channel')
     )
     .addSubcommand(sub =>
       sub
         .setName('remove')
-        .setDescription('Retire un utilisateur du serveur ou du bot')
-        .addStringOption(option =>
-          option
-            .setName('scope')
-            .setDescription('Portée de la suppression')
-            .setRequired(true)
-            .addChoices(
-              { name: 'server', value: 'server' },
-              { name: 'bot', value: 'bot' }
-            )
-        )
+        .setDescription('Remove a user from the server')
         .addStringOption(option =>
           option
             .setName('user')
-            .setDescription('ID Discord de l’utilisateur à supprimer')
+            .setDescription('Discord ID of the user to remove')
             .setRequired(true)
         )
     )
     .addSubcommand(sub =>
       sub
         .setName('clean')
-        .setDescription('Retire tous les utilisateurs qui ne sont plus sur ce serveur.')
+        .setDescription('Remove all users who are no longer on this server')
     )
     .addSubcommand(sub =>
       sub
         .setName('language')
-        .setDescription('Définit le langage du serveur')
+        .setDescription('Set the server language')
         .addStringOption(option =>
           option
             .setName('language')
-            .setDescription('Choix du langage')
+            .setDescription('Choose language')
             .setRequired(true)
             .addChoices(
               { name: 'Français', value: 'fr' },
@@ -55,11 +46,21 @@ export default {
     ),
 
   async execute(interaction) {
-    const subcommand = interaction.options.getSubcommand();
-    const guildId = interaction.guildId;
 
+    const guildId = interaction.guild?.id;
     const guildsDB = loadDB('guildsdb');
+    const lang = guildsDB[guildId]?.lang || 'en';
+
+    // ✅ Vérification : interdit en MP
+    if (!interaction.guildId) {
+      return interaction.reply({
+        content: t(lang, "notInDM"),
+        flags: MessageFlags.Ephemeral,
+      });
+    }
+
     const usersDB = loadDB('usersdb');
+    const subcommand = interaction.options.getSubcommand();
 
     // === /admin setchannel ===
     if (subcommand === 'setchannel') {
@@ -78,61 +79,36 @@ export default {
       saveDB(guildsDB, 'guildsdb');
 
       return interaction.reply({
-        content: `✅ Salon défini avec succès. Les succès seront désormais envoyés ici.`,
+        content: t(lang, "salonDefiniSuccess"),
         flags: MessageFlags.Ephemeral
       });
     }
 
     // === /admin remove ===
     if (subcommand === 'remove') {
-      const scope = interaction.options.getString('scope');
       const userId = interaction.options.getString('user');
 
-      if (scope === 'server') {
-        if (!guildsDB[guildId]?.users.includes(userId)) {
-          return interaction.reply({
-            content: `⚠️ L'utilisateur <@${userId}> n'est pas enregistré sur ce serveur.`,
-            flags: MessageFlags.Ephemeral
-          });
-        }
-
-        guildsDB[guildId].users = guildsDB[guildId].users.filter(id => id !== userId);
-        saveDB(guildsDB, 'guildsdb');
-
+      if (!guildsDB[guildId]?.users.includes(userId)) {
         return interaction.reply({
-          content: `✅ Utilisateur <@${userId}> retiré du serveur.`,
+          content: t(lang, "userNotRegistered", {userId: userId}),
           flags: MessageFlags.Ephemeral
         });
       }
 
-      if (scope === 'bot') {
-        if (!usersDB[userId]) {
-          return interaction.reply({
-            content: `⚠️ L'utilisateur <@${userId}> n'est pas enregistré globalement.`,
-            flags: MessageFlags.Ephemeral
-          });
-        }
+      guildsDB[guildId].users = guildsDB[guildId].users.filter(id => id !== userId);
+      saveDB(guildsDB, 'guildsdb');
 
-        delete usersDB[userId];
-        saveDB(usersDB, 'usersdb');
-
-        for (const gid in guildsDB) {
-          guildsDB[gid].users = guildsDB[gid].users.filter(id => id !== userId);
-        }
-        saveDB(guildsDB, 'guildsdb');
-
-        return interaction.reply({
-          content: `✅ Utilisateur <@${userId}> supprimé globalement.`,
-          flags: MessageFlags.Ephemeral
-        });
-      }
+      return interaction.reply({
+        content: t(lang, "userRemoved", {uderId : userId}),
+        flags: MessageFlags.Ephemeral
+      });
     }
 
     // === /admin clean ===
     if (subcommand === 'clean') {
       if (!guildsDB[guildId]) {
         return interaction.reply({
-          content: `⚠️ Aucun utilisateur enregistré sur ce serveur.`,
+          content: t(lang, "noUser"),
           flags: MessageFlags.Ephemeral
         });
       }
@@ -154,7 +130,7 @@ export default {
       saveDB(guildsDB, 'guildsdb');
 
       return interaction.reply({
-        content: `✅ Nettoyage effectué : ${removed.length} utilisateur(s) retiré(s) du serveur car ils n'y sont plus.`,
+        content: t(lang, "cleanComplete", {number: removed.length}),
         flags: MessageFlags.Ephemeral
       });
     }
@@ -177,7 +153,7 @@ export default {
       saveDB(guildsDB, 'guildsdb');
 
       return interaction.reply({
-        content: `✅ Langue définie avec succès.`,
+        content: t(lang, "langSuccess"),
         flags: MessageFlags.Ephemeral
       });
     }

@@ -1,4 +1,7 @@
 {
+    "notInDM": "❌ Cette commande doit être utilisée dans un serveur Discord, pas en message privé.",
+
+    "_DESC1_": "INDEX.JS",
     "aotwUnlockedTitle": "🎉 AOTW débloqué !",
     "aotwUnlockedDesc": "**{username}** a débloqué le succès de la semaine : **{title}** !",
     "aotmUnlockedTitle": "🏅 AOTM débloqué !",
@@ -6,8 +9,40 @@
     "gameMasteredTitle": "🎮 Jeu masterisé !",
     "gameMasteredDesc": "**{username}** a masterisé le jeu **{gameTitle}** {consoleName}",
     "gameMasteredFooter": "Masterisé avec {hardcore}/{total} succès en mode hardcore",
+    "gameMasteredSoftcoreTitle": "🎮 Jeu terminé !",
+    "gameMasteredSoftcoreDesc": "**{username}** a terminé le jeu **{gameTitle}** {consoleName}",
+    "gameMasteredSoftcoreFooter": "Terminé avec {softcore}/{total} succès en mode softcore",
 
+    "_DESC2_": "GENERATEIMAGE.JS",
     "unlockHeader": "{username} vient de débloquer :",
-    "gameTitle": "Jeu : {gameTitle} | {progressPercent}%"
+    "gameTitle": "Jeu : {gameTitle} | {progressPercent}%",
+
+    "_DESC3_": "VOTE.JS",
+    "voteTitle": "💖 Soutenir le bot",
+    "voteDesc": "Pour soutenir le bot, n'hésitez pas à voter et à laisser un avis.\nCela aide beaucoup à le faire connaître et à continuer son développement !",
+    "voteReview": "📝 Avis",
+
+    "_DESC4_": "HELP.JS",
+    "chooseCommand": "Choisis une commande...",
+    "commandDesc": "Commande /{cmdName}",
+    "usage": "Utilisation",
+
+    "_DESC5_": "ADMIN_COMMANDS.JS",
+    "salonDefiniSuccess": "✅ Salon défini avec succès. Les succès seront désormais envoyés ici.",
+    "userNotRegistered": "⚠️ L'utilisateur <@{userId}> n'est pas enregistré",
+    "userRemoved": "✅ Utilisateur <@{userId}> retiré du serveur.",
+    "noUser": "⚠️ Aucun utilisateur enregistré sur ce serveur.",
+    "cleanComplete": "✅ Nettoyage effectué : {number} utilisateur(s) retiré(s) du serveur car ils n'y sont plus.",
+    "langSuccess": "✅ Langue définie avec succès.",
+
+    "_DESC6_": "AOTM/AOTW.js",
+    "noAotm": "❌ Aucune information sur l’AOTM actuellement.",
+    "noAotw": "❌ Aucune information sur l’AOTW actuellement.",
+    "aotUnlocked": "Débloqué",
+    "aotNotUnlocked": "Pas débloqué",
+    "aotGame": "Jeu",
+
+    "_DESC7_": "REGISTER.js",
+    "registerSuccess": "✅ Ton compte **{username}** a bien été enregistré !"
+
   }
-  

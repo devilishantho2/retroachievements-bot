@@ -1,4 +1,7 @@
 {
+    "notInDM": "❌ This command must be used in a Discord server, not in a private message.",
+
+    "_DESC1_": "INDEX.JS",
     "aotwUnlockedTitle": "🎉 AOTW unlocked!",
     "aotwUnlockedDesc": "**{username}** unlocked the achievement of the week: **{title}**!",
     "aotmUnlockedTitle": "🏅 AOTM unlocked!",
@@ -6,8 +9,41 @@
     "gameMasteredTitle": "🎮 Game mastered!",
     "gameMasteredDesc": "**{username}** mastered the game **{gameTitle}** {consoleName}",
     "gameMasteredFooter": "Mastered with {hardcore}/{total} hardcore achievements",
+    "gameMasteredSoftcoreTitle": "🎮 Game completed !",
+    "gameMasteredSoftcoreDesc": "**{username}** completed the game **{gameTitle}** {consoleName}",
+    "gameMasteredSoftcoreFooter": "Completed with {softcore}/{total} softcore achievements",
 
+    "_DESC2_": "GENERATEIMAGE.JS",
     "unlockHeader": "{username} has just unlocked :",
-    "gameTitle": "Game : {gameTitle} | {progressPercent}%"
+    "gameTitle": "Game : {gameTitle} | {progressPercent}%",
+
+    "_DESC3_": "VOTE.JS",
+    "voteTitle": "💖 Support the bot",
+    "voteDesc": "To support the bot, feel free to vote and leave a review.\nThis greatly helps make it known and continue its development!",
+    "voteReview": "📝 Reviews",
+
+    "_DESC4_": "HELP.JS",
+    "chooseCommand": "Choose a command...",
+    "commandDesc": "Command /{cmdName}",
+    "usage": "Use",
+
+    "DESC5_": "ADMIN_COMMANDS.JS",
+    "salonDefiniSuccess": "✅ Channel set successfully. Achievements will now be sent here.",
+    "userNotRegistered": "⚠️ User <@{userId}> is not registered",
+    "userRemoved": "✅ User <@{userId}> has been removed from the server.",
+    "noUser": "⚠️ No users are registered on this server.",
+    "cleanComplete": "✅ Cleanup complete: {number} user(s) removed from the server because they are no longer present.",
+    "langSuccess": "✅ Language set successfully.",
+
+    "_DESC6_": "AOTM/AOTW.js",
+    "noAotm": "❌ No Achievement of the Month (AOTM) information currently available.",
+    "noAotw": "❌ No Achievement of the Week (AOTW) information currently available.",
+    "aotUnlocked": "Unlocked",
+    "aotNotUnlocked": "Not unlocked",
+    "aotGame": "Game",
+
+    "_DESC7_": "REGISTER.js",
+    "registerSuccess": "✅ Your account **{username}** has been successfully registered!"
+
   }
   

@@ -1,29 +1,35 @@
 import { SlashCommandBuilder, MessageFlags } from 'discord.js';
 import { loadDB, getAotmInfo } from '../db.js';
+import { t } from '../locales.js';
 
 export default {
   data: new SlashCommandBuilder()
     .setName('aotm')
-    .setDescription('Affiche le succès Achievement of the Month (AOTM) du mois'),
+    .setDescription('Show this month’s Achievement (AOTM)'),
 
   async execute(interaction) {
+
+    const guildId = interaction.guild?.id;
+    const guildsDB = loadDB('guildsdb');
+    const lang = guildsDB[guildId]?.lang || 'en';
+
     const aotm = getAotmInfo();
 
     if (!aotm || !aotm.id) {
       return interaction.reply({
-        content: '❌ Aucune information sur l’AOTM actuellement.',
+        content: t(lang, "noAotm"),
         ephemeral: true,
       });
     }
 
     const usersDB = loadDB('usersdb');
-    const user = usersDB[interaction.user.id]; // accès direct via clé discordId
+    const user = usersDB[interaction.user.id];
 
     const unlocked = user ? user.aotwUnlocked : false;
 
     const color = unlocked ? 0x2ecc71 : 0xe74c3c;
     const statusEmoji = unlocked ? '✅' : '❌';
-    const statusText = unlocked ? 'Débloqué' : 'Pas débloqué';
+    const statusText = unlocked ? t(lang, "aotUnlocked") : t(lang, "aotNotUnlocked");
 
     const embed = {
       title: `🎯 Achievement of the Month : ${aotm.title}`,
@@ -31,7 +37,7 @@ export default {
       color,
       fields: [
         { name: 'Points', value: `${aotm.points}`, inline: true },
-        { name: 'Jeu', value: aotm.gameTitle ? `[${aotm.gameTitle}](https://retroachievements.org/game/${aotm.game.id})` : 'N/A', inline: true },
+        { name: t(lang, "aotGame"), value: aotm.gameTitle ? `[${aotm.gameTitle}](https://retroachievements.org/game/${aotm.game.id})` : 'N/A', inline: true },
       ],
       timestamp: new Date(),
       footer: {

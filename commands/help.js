@@ -1,7 +1,8 @@
 import { SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder, EmbedBuilder, MessageFlags, Formatters } from 'discord.js';
 import { loadDB } from '../db.js';
+import { t } from '../locales.js';
 
-const BOT_VERSION = '1.2.5';
+const BOT_VERSION = '1.2.6';
 
 const commandText = { 
   title: {
@@ -121,13 +122,13 @@ const commandsInfo = {
 export default {
   data: new SlashCommandBuilder()
     .setName('help')
-    .setDescription('Affiche le menu d\'aide interactif'),
+    .setDescription('Show interactive help menu'),
 
   async execute(interaction) {
 
     const guildId = interaction.guild?.id;
     const guildsDb = loadDB('guildsdb');
-    const lang = guildsDb[guildId]?.lang || 'en'; // 'en' par défaut
+    const lang = guildsDb[guildId]?.lang || 'en';
     
     
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
@@ -148,7 +149,7 @@ export default {
       .addComponents(
         new StringSelectMenuBuilder()
           .setCustomId('help_select')
-          .setPlaceholder('Choisis une commande...')
+          .setPlaceholder(t(lang, 'chooseCommand'))
           .addOptions(options)
       );
 
@@ -166,14 +167,13 @@ export default {
       const cmdInfo = commandsInfo[cmdName][lang];
 
       const cmdEmbed = new EmbedBuilder()
-        .setTitle(`Commande /${cmdName}`)
+        .setTitle(t(lang, "commandDesc", { cmdName : cmdName}))
         .setDescription(cmdInfo.details)
         .addFields(
           { name: 'Description', value: cmdInfo.description },
-          { name: 'Utilisation', value: cmdInfo.usage }
+          { name: t(lang, 'usage'), value: cmdInfo.usage }
         )
         .setColor('Green')
-        .setFooter({ text: 'Commande sélectionnée depuis le menu d\'aide' });
 
       await i.update({ embeds: [cmdEmbed], components: [row] });
     });
