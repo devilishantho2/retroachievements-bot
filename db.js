@@ -1,50 +1,43 @@
 import fs from 'fs';
 import path from 'path';
 
-const USERS_FILE = './data/users.json';
-const GUILDS_FILE = './data/guilds.json';
-const AOTW_FILE = './data/aotw.json';
-const AOTM_FILE = './data/aotm.json';
-const apiFile = path.resolve('./data/api.json');
+const DB = {
+  "usersdb": "./data/users.json",
+  "guildsdb": "./data/guilds.json",
+  "aotwdb": "./data/aotw.json",
+  "aotmdb": "./data/aotm.json",
+  "apidb": "./data/api.json",
+  "statsdb": "./data/stats.json"
+};
 
 // --- Fonctions existantes, à garder intactes ---
-// Exemple : chargement DB
 export function loadDB(db_name) {
-  if (db_name === 'usersdb') {
-    if (!fs.existsSync(USERS_FILE)) fs.writeFileSync(USERS_FILE, JSON.stringify([]));
-    return JSON.parse(fs.readFileSync(USERS_FILE));
-  }
-  else if (db_name === 'guildsdb') {
-    if (!fs.existsSync(GUILDS_FILE)) fs.writeFileSync(GUILDS_FILE, JSON.stringify([]));
-    return JSON.parse(fs.readFileSync(GUILDS_FILE));
-  }
+  if (!fs.existsSync(DB[db_name])) fs.writeFileSync(DB[db_name], JSON.stringify([]));
+  return JSON.parse(fs.readFileSync(DB[db_name]));
 }
 
-// Exemple : sauvegarde DB
 export function saveDB(db, db_name) {
-  if (db_name === 'usersdb') {
-    fs.writeFileSync(USERS_FILE, JSON.stringify(db, null, 2));
-  }
-  else if (db_name === 'guildsdb') {
-    fs.writeFileSync(GUILDS_FILE, JSON.stringify(db, null, 2));
-  }
+  fs.writeFileSync(DB[db_name], JSON.stringify(db, null, 2));
 }
 
-// Ajouter un user si il existe pas
+// Ajouter ou mettre à jour un user
 export function addUser(discordId, guildId, data) {
   // Chargement des DB
   const usersDB = loadDB('usersdb');
   const guildsDB = loadDB('guildsdb');
 
-  // Ajout dans users.json si inexistant
+  // Ajout ou mise à jour dans users.json
   if (!usersDB[discordId]) {
     usersDB[discordId] = data;
-    saveDB(usersDB, 'usersdb');
+  } else {
+    // On met à jour les champs sensibles
+    usersDB[discordId].raUsername = data.raUsername;
+    usersDB[discordId].raApiKey   = data.raApiKey;
   }
+  saveDB(usersDB, 'usersdb');
 
   // Gestion guilds.json
   if (!guildsDB[guildId]) {
-    // Création d'une nouvelle guilde
     guildsDB[guildId] = {
       channel: 0,
       lang: "en",
@@ -52,12 +45,12 @@ export function addUser(discordId, guildId, data) {
     };
   }
 
-  // Ajout de l'utilisateur dans la liste users si pas déjà dedans
   if (!guildsDB[guildId].users.includes(discordId)) {
     guildsDB[guildId].users.push(discordId);
     saveDB(guildsDB, 'guildsdb');
   }
 }
+
 
 // Exemple : mise à jour lastAchievement
 export function setLastAchievement(discordId, achievementId) {
@@ -86,15 +79,6 @@ export function getUserColor(discordId) {
 }
 
 // --- Fonctions AOTW ---
-export function getAotwInfo() {
-  if (!fs.existsSync(AOTW_FILE)) return null;
-  return JSON.parse(fs.readFileSync(AOTW_FILE));
-}
-
-export function setAotwInfo(aotw) {
-  fs.writeFileSync(AOTW_FILE, JSON.stringify(aotw, null, 2));
-}
-
 export function setAotwUnlocked(discordId, value = true) {
   const usersDB = loadDB('usersdb');
   const user = usersDB[discordId];
@@ -115,15 +99,6 @@ export function resetAotwUnlocked() {
 }
 
 // --- Fonctions AOTM (à ajouter) ---
-export function getAotmInfo() {
-  if (!fs.existsSync(AOTM_FILE)) return null;
-  return JSON.parse(fs.readFileSync(AOTM_FILE));
-}
-
-export function setAotmInfo(aotm) {
-  fs.writeFileSync(AOTM_FILE, JSON.stringify(aotm, null, 2));
-}
-
 export function setAotmUnlocked(discordId, value = true) {
   const usersDB = loadDB('usersdb');
   const user = usersDB[discordId];
@@ -163,23 +138,62 @@ export function incrementApiCallCount() {
   const day = now.toLocaleDateString('fr-FR'); // e.g. "30/07/2025"
   const hour = `${now.getHours()}h`; // e.g. "17h"
 
-  let data = {};
-  if (fs.existsSync(apiFile)) {
-    try {
-      data = JSON.parse(fs.readFileSync(apiFile, 'utf8'));
-    } catch (err) {
-      console.error('❌ Erreur lecture api.json :', err);
-    }
-  }
+  const data = loadDB('apidb');
 
   if (!data[day]) data[day] = {};
   if (!data[day][hour]) data[day][hour] = 0;
 
   data[day][hour] += 1;
 
-  try {
-    fs.writeFileSync(apiFile, JSON.stringify(data, null, 2), 'utf8');
-  } catch (err) {
-    console.error('❌ Erreur écriture api.json :', err);
+  saveDB(data, 'apidb')
+}
+
+export function addToHistory(discordId,url,hardcore,buffer) {
+  const usersDB = loadDB('usersdb');
+  const raUsername = usersDB[discordId].raUsername;
+  const history = usersDB[discordId].history;
+
+  //Si déja 10 succès récents
+  if (history.length === 10) {
+    const older = history[0];
+    fs.unlink(`./data/images/${discordId}${older[0]}`, (err) => {
+      if (err) {
+        console.error(`Erreur suppression ${older[0]}:`, err);
+      } else {
+        console.log(`✅ Fichier ${older[0]} supprimé`);
+      }
+    });
+    history.splice(0,1);
+  };
+
+  //Sauvegarde du succès
+  const dir = path.join('./data/images', discordId);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
   }
+  const filePath = path.join(dir, url);
+  fs.writeFileSync(filePath, buffer);
+
+  history.push([url,hardcore]);
+  usersDB[discordId].history = history;
+  saveDB(usersDB, 'usersdb');
+}
+
+export function changeLatestMaster(discordId,master) {
+  const usersDB = loadDB('usersdb');
+  usersDB[discordId].latestMaster = master;
+  saveDB(usersDB, 'usersdb');
+}
+
+export function updateStats(points) {
+  const statsDB = loadDB('statsdb');
+  statsDB.totalCheevos += 1;
+  statsDB.totalPoints += points;
+  if (points === 0) statsDB.total0 += 1;
+  else if (points >= 1 && points <= 4) statsDB.total1_4 += 1;
+  else if (points >= 5 && points <= 9) statsDB.total5_9 += 1;
+  else if (points === 10) statsDB.total10 += 1;
+  else if (points === 25) statsDB.total25 += 1;
+  else if (points === 50) statsDB.total50 += 1;
+  saveDB(statsDB, 'statsdb');
 }

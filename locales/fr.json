@@ -6,10 +6,10 @@
     "aotwUnlockedDesc": "**{username}** a débloqué le succès de la semaine : **{title}** !",
     "aotmUnlockedTitle": "🏅 AOTM débloqué !",
     "aotmUnlockedDesc": "**{username}** a débloqué le succès du mois : **{title}** !",
-    "gameMasteredTitle": "🎮 Jeu masterisé !",
+    "gameMasteredTitle": "<:mastered:1413558228960153752> Jeu masterisé !",
     "gameMasteredDesc": "**{username}** a masterisé le jeu **{gameTitle}** {consoleName}",
     "gameMasteredFooter": "Masterisé avec {hardcore}/{total} succès en mode hardcore",
-    "gameMasteredSoftcoreTitle": "🎮 Jeu terminé !",
+    "gameMasteredSoftcoreTitle": "<:completed:1413558220320018573> Jeu terminé !",
     "gameMasteredSoftcoreDesc": "**{username}** a terminé le jeu **{gameTitle}** {consoleName}",
     "gameMasteredSoftcoreFooter": "Terminé avec {softcore}/{total} succès en mode softcore",
 
@@ -43,6 +43,11 @@
     "aotGame": "Jeu",
 
     "_DESC7_": "REGISTER.js",
-    "registerSuccess": "✅ Ton compte **{username}** a bien été enregistré !"
+    "registerSuccess": "✅ Ton compte **{username}** a bien été enregistré !",
+    "registerError": "❌ Erreur lors de la connexion, es-tu sûr d'avoir bien rentré tes identifiants? (Ta clé API se trouve sur retroachievements.org/settings)",
+
+    "_DESC8_": "STATS.js",
+    "statsTitle": "📊 Statistiques du Bot",
+    "statsTotal": "⭐ Répartition des Points"
 
   }

@@ -17,8 +17,7 @@
   });
 
   const assombrissement = 50;
-  const default_background = "https://raw.githubusercontent.com/devilishantho2/devilishantho2.github.io/refs/heads/main/default_background.png";
-  const trophy_url = "https://raw.githubusercontent.com/devilishantho2/devilishantho2.github.io/refs/heads/main/trophy.png";
+  const default_background = "images/default_background.png";
 
   export async function generateAchievementImage({
     title,
@@ -64,7 +63,7 @@
 
     // 🏆 Image trophée
     try {
-      const trophy = await loadImage(trophy_url);
+      const trophy = await loadImage(`images/trophy.png`);
       ctx.drawImage(trophy, 20, 15, 40, 40); // X, Y, width, height
     } catch (e) {
       // ne rien faire si échec
@@ -149,7 +148,7 @@
         }
   
         if (progressPercent !== undefined && progressPercent !== null) {
-          const progressImg = await loadImage(`https://raw.githubusercontent.com/devilishantho2/retroachievements-bot/refs/heads/main/sprites/${Math.min(Math.ceil(progressPercent), 100)}.png`);
+          const progressImg = await loadImage(`images/progress_bar/${Math.min(Math.ceil(progressPercent), 100)}.png`);
           const progressWidth = 100;
           const progressHeight = 11;
           const progressX = badgeX + (badgeSize / 2) - (progressWidth / 2);

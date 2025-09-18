@@ -43,7 +43,12 @@
     "aotGame": "Game",
 
     "_DESC7_": "REGISTER.js",
-    "registerSuccess": "✅ Your account **{username}** has been successfully registered!"
+    "registerSuccess": "✅ Your account **{username}** has been successfully registered!",
+    "registerError": "❌ Error while connecting. Are you sure you entered your credentials correctly? (You can find your API key at retroachievements.org/settings)",
+
+    "_DESC8_": "STATS.js",
+    "statsTitle": "📊 Bot Statistics",
+    "statsTotal": "⭐ Points Breakdown"
 
   }
   

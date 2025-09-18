@@ -1,5 +1,5 @@
 import { SlashCommandBuilder, MessageFlags } from 'discord.js';
-import { loadDB, getAotmInfo } from '../db.js';
+import { loadDB } from '../db.js';
 import { t } from '../locales.js';
 
 export default {
@@ -13,7 +13,7 @@ export default {
     const guildsDB = loadDB('guildsdb');
     const lang = guildsDB[guildId]?.lang || 'en';
 
-    const aotm = getAotmInfo();
+    const aotm = loadDB('aotmdb');
 
     if (!aotm || !aotm.id) {
       return interaction.reply({
@@ -25,7 +25,7 @@ export default {
     const usersDB = loadDB('usersdb');
     const user = usersDB[interaction.user.id];
 
-    const unlocked = user ? user.aotwUnlocked : false;
+    const unlocked = user ? user.aotmUnlocked : false;
 
     const color = unlocked ? 0x2ecc71 : 0xe74c3c;
     const statusEmoji = unlocked ? '✅' : '❌';

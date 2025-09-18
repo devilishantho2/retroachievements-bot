@@ -1,5 +1,5 @@
 import { SlashCommandBuilder, MessageFlags } from 'discord.js';
-import { loadDB, getAotwInfo } from '../db.js';
+import { loadDB } from '../db.js';
 import { t } from '../locales.js';
 
 export default {
@@ -13,7 +13,7 @@ export default {
     const guildsDB = loadDB('guildsdb');
     const lang = guildsDB[guildId]?.lang || 'en';
 
-    const aotw = getAotwInfo();
+    const aotw = loadDB('aotwdb');
 
     if (!aotw || !aotw.id) {
       return interaction.reply({
