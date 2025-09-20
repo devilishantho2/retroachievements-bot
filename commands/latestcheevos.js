@@ -1,31 +1,31 @@
 import { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import { loadDB } from '../db.js';
 import { generateLatestImage } from '../generateLatestImage.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { generateAchievementImage } from '../generateImage.js';
+import { t } from '../locales.js';
 
 export default {
   data: new SlashCommandBuilder()
     .setName('latestcheevos')
-    .setDescription('Affiche les derniers succès RetroAchievements d’un utilisateur')
+    .setDescription('Display a user’s latest achievements')
     .addUserOption(option =>
       option.setName('cible')
-        .setDescription('Utilisateur dont tu veux voir les succès')
+        .setDescription('User whose achievements you want to see')
         .setRequired(false)
     ),
 
   async execute(interaction) {
-    const targetUser = interaction.options.getUser('cible') || interaction.user; // 🎯 si pas choisi → l’auteur
+    const targetUser = interaction.options.getUser('cible') || interaction.user;
+    console.log(targetUser);
     const usersDB = loadDB('usersdb');
     const user = usersDB[targetUser.id];
+    const guildId = interaction.guild?.id;
+    const guildsDB = loadDB('guildsdb');
+    const lang = guildsDB[guildId]?.lang || 'en';
 
     if (!user) {
       return interaction.reply({
-        content: `Utilisateur non enregistré.`
+        content: t(lang, "userNotRegistered", { userId : targetUser.id })
       });
     }
 
@@ -34,22 +34,26 @@ export default {
     try {
       const pages = [];
 
-      // 🖼️ Page principale générée
-      const mainImage = await generateLatestImage(targetUser.id);
+      // 🖼️ Page principale : derniers succès
+      const mainImage = await generateLatestImage(targetUser.id, lang);
       const mainBuffer = mainImage?.data ? Buffer.from(mainImage.data) : mainImage;
       pages.push({ buffer: mainBuffer, name: 'latestcheevos.png' });
 
-      // 🖼️ Pages suivantes = images sauvegardées dans l’historique
+      // 🖼️ Pages suivantes = génération à partir de l’historique
       if (user.history && user.history.length > 0) {
+        const userBackground = user.background;
+        const userColor = user.color;
+        user
         for (let i = user.history.length - 1; i >= 0; i--) {
-          const [filePath , , ] = user.history[i];
-          const imagePath = path.join(__dirname, '..', 'data', 'images', targetUser.id, filePath);
-          if (filePath && fs.existsSync(imagePath)) {
-            pages.push({ buffer: fs.readFileSync(imagePath), name: `history_${i + 1}.png` });
-          }
+          const entry = user.history[i];
+          entry.backgroundImage = userBackground;
+          entry.textColor = userColor;
+          entry.lang = lang;
+          const historyBuffer = await generateAchievementImage(entry);
+          pages.push({ buffer: historyBuffer, name: `history_${i + 1}.png` });
         }
       }
-      
+
       let currentPage = 0;
 
       const row = new ActionRowBuilder().addComponents(
@@ -92,7 +96,7 @@ export default {
     } catch (err) {
       console.error(err);
       await interaction.editReply({
-        content: 'Impossible de générer les derniers succès.'
+        content: t(lang, "errorLatestCheevos")
       });
     }
   },

@@ -1,27 +1,28 @@
 import { SlashCommandBuilder, MessageFlags } from 'discord.js';
 import { loadDB, setUserColor, setUserBackground } from '../db.js';
+import { t } from '../locales.js';
 
 export default {
   data: new SlashCommandBuilder()
     .setName('customize')
-    .setDescription('Personnalise ton image de succès')
+    .setDescription('Customize the background of your achievements')
     .addSubcommand(subcommand =>
       subcommand
         .setName('color')
-        .setDescription('Définir la couleur de ton embed (format hex, ex: #ff0000)')
+        .setDescription("Set the color of your text (hex format, e.g. #ff0000)")
         .addStringOption(option =>
           option.setName('value')
-            .setDescription('Couleur en hexadécimal (#RRGGBB)')
+            .setDescription('Color in hexadecimal (#RRGGBB)')
             .setRequired(true)
         )
     )
     .addSubcommand(subcommand =>
       subcommand
         .setName('background')
-        .setDescription("Définit l'image de fond personnalisée")
+        .setDescription("Set your custom background image")
         .addStringOption(option =>
           option.setName('value')
-            .setDescription("Lien direct vers l'image (.jpg/.jpeg/.png)")
+            .setDescription("Direct link to the image (.jpg/.jpeg/.png/.webp)")
             .setRequired(true)
         )
     ),
@@ -34,9 +35,13 @@ export default {
     const usersDB = loadDB('usersdb');
     const user = usersDB[discordId];
 
+    const guildId = interaction.guild?.id;
+    const guildsDB = loadDB('guildsdb');
+    const lang = guildsDB[guildId]?.lang || 'en';
+
     if (!user) {
       return interaction.reply({
-        content: "❌ Tu dois d'abord t'enregistrer avec `/register` avant de personnaliser tes paramètres.",
+        content: t(lang, "customNotRegistered"),
         flags: MessageFlags.Ephemeral,
       });
     }
@@ -44,7 +49,7 @@ export default {
     if (subcommand === 'color') {
       if (!/^#?[0-9A-Fa-f]{6}$/.test(value)) {
         return interaction.reply({
-          content: '❌ Format invalide. Utilise un code hex comme `#ff0000`',
+          content: t(lang, "customWrongColor"),
           flags: MessageFlags.Ephemeral,
         });
       }
@@ -53,15 +58,15 @@ export default {
       setUserColor(discordId, normalizedColor);
 
       return interaction.reply({
-        content: `✅ Couleur définie sur \`${normalizedColor}\``,
+        content: t(lang, "customColorSuccess", { color : normalizedColor }),
         flags: MessageFlags.Ephemeral,
       });
     }
 
     if (subcommand === 'background') {
-      if (!/^https?:\/\/.+\.(jpg|jpeg|png)$/i.test(value)) {
+      if (!/^https?:\/\/.+\.(jpg|jpeg|png|webp)(\?.*)?$/i.test(value)) {
         return interaction.reply({
-          content: "❌ L'URL doit être un lien direct vers une image (.jpg, .jpeg ou .png).",
+          content: t(lang, "customWrongImage"),
           flags: MessageFlags.Ephemeral
         });
       }
@@ -69,7 +74,7 @@ export default {
       setUserBackground(discordId, value);
 
       return interaction.reply({
-        content: "✅ Ton image de fond a bien été mise à jour !",
+        content: t(lang, "customImageSuccess"),
         flags: MessageFlags.Ephemeral
       });
     }

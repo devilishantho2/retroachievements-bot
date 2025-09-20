@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import sharp from "sharp";
 
 const DB = {
   "usersdb": "./data/users.json",
@@ -118,13 +119,30 @@ export function resetAotmUnlocked() {
   saveDB(usersDB, 'usersdb');
 }
 
-export function setUserBackground(discordId, background) {
-  const usersDB = loadDB('usersdb');
+export async function setUserBackground(discordId, url) {
+  const usersDB = loadDB("usersdb");
   const user = usersDB[discordId];
-  if (user) {
-    user.background = background;
-    saveDB(usersDB, 'usersdb');
+
+  // Télécharge l’image
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`Échec du téléchargement de l'image: ${res.statusText}`);
   }
+
+  // Lis le contenu brut
+  const buffer = Buffer.from(await res.arrayBuffer());
+
+  const filepath = `data/backgrounds/background_${discordId}.png`;
+
+  // Conversion et enregistrement en PNG
+  await sharp(buffer)
+    .png()
+    .toFile(filepath);
+
+  // Sauvegarde dans la DB
+  user.background = filepath;
+  usersDB[discordId] = user;
+  saveDB(usersDB, "usersdb");
 }
 
 export function getUserBackground(discordId) {
@@ -139,42 +157,35 @@ export function incrementApiCallCount() {
   const hour = `${now.getHours()}h`; // e.g. "17h"
 
   const data = loadDB('apidb');
+  const data2 = loadDB('statsdb');
 
   if (!data[day]) data[day] = {};
   if (!data[day][hour]) data[day][hour] = 0;
 
   data[day][hour] += 1;
+  data2.apicalls += 1;
 
-  saveDB(data, 'apidb')
+  saveDB(data, 'apidb');
+  saveDB(data2, 'statsdb');
 }
 
-export function addToHistory(discordId,url,hardcore,buffer) {
+export function incrementImagesGenerated(size) {
+  const data = loadDB("statsdb");
+  data.images += 1;
+  data.imagessize += size;
+  saveDB(data, 'statsdb');
+}
+
+export function addToHistory(discordId, cheevosdata) {
   const usersDB = loadDB('usersdb');
-  const raUsername = usersDB[discordId].raUsername;
   const history = usersDB[discordId].history;
 
   //Si déja 10 succès récents
   if (history.length === 10) {
-    const older = history[0];
-    fs.unlink(`./data/images/${discordId}${older[0]}`, (err) => {
-      if (err) {
-        console.error(`Erreur suppression ${older[0]}:`, err);
-      } else {
-        console.log(`✅ Fichier ${older[0]} supprimé`);
-      }
-    });
     history.splice(0,1);
   };
 
-  //Sauvegarde du succès
-  const dir = path.join('./data/images', discordId);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-  const filePath = path.join(dir, url);
-  fs.writeFileSync(filePath, buffer);
-
-  history.push([url,hardcore]);
+  history.push(cheevosdata);
   usersDB[discordId].history = history;
   saveDB(usersDB, 'usersdb');
 }
@@ -185,15 +196,37 @@ export function changeLatestMaster(discordId,master) {
   saveDB(usersDB, 'usersdb');
 }
 
-export function updateStats(points) {
+export function updateStats_Points(points,hardcore) {
   const statsDB = loadDB('statsdb');
-  statsDB.totalCheevos += 1;
-  statsDB.totalPoints += points;
-  if (points === 0) statsDB.total0 += 1;
-  else if (points >= 1 && points <= 4) statsDB.total1_4 += 1;
-  else if (points >= 5 && points <= 9) statsDB.total5_9 += 1;
-  else if (points === 10) statsDB.total10 += 1;
-  else if (points === 25) statsDB.total25 += 1;
-  else if (points === 50) statsDB.total50 += 1;
+  if (hardcore) {
+    statsDB.totalCheevos_h += 1;
+    statsDB.totalPoints_h += points;
+    if (points === 0) statsDB.total0_s += 1;
+    else if (points >= 1 && points <= 4) statsDB.total1_4_h += 1;
+    else if (points >= 5 && points <= 9) statsDB.total5_9_h += 1;
+    else if (points === 10) statsDB.total10_h += 1;
+    else if (points === 25) statsDB.total25_h += 1;
+    else if (points === 50) statsDB.total50_h += 1;
+  } else {
+    statsDB.totalCheevos_s += 1;
+    statsDB.totalPoints_s += points;
+    if (points === 0) statsDB.total0_s += 1;
+    else if (points >= 1 && points <= 4) statsDB.total1_4_s += 1;
+    else if (points >= 5 && points <= 9) statsDB.total5_9_s += 1;
+    else if (points === 10) statsDB.total10_s += 1;
+    else if (points === 25) statsDB.total25_s += 1;
+    else if (points === 50) statsDB.total50_s += 1;
+  }
+  saveDB(statsDB, 'statsdb');
+}
+
+export function updateStats_Master(type) {
+  const statsDB = loadDB("statsdb");
+  if (type === "mastery") {
+    statsDB.mastery += 1;
+  }
+  else if (type === "completion") {
+    statsDB.completion += 1;
+  }
   saveDB(statsDB, 'statsdb');
 }

@@ -13,7 +13,8 @@ import {
   incrementApiCallCount,
   addToHistory,
   changeLatestMaster,
-  updateStats
+  updateStats_Points,
+  updateStats_Master
 } from './db.js';
 import {
   buildAuthorization,
@@ -36,6 +37,62 @@ process.on('unhandledRejection', reason => {
 
 const CHECK_INTERVAL = 30 * 1000; // 3 minutes
 const userCheckState = {}; // { discordId: { nextCheckTime } }
+
+const consoleTable = {
+  "Game Boy": "gb",
+  "Game Boy Color": "gbc",
+  "Game Boy Advance": "gba",
+  "NES/Famicom": "nes",
+  "SNES/Super Famicom": "snes",
+  "Nintendo 64": "n64",
+  "GameCube": "gc",
+  "Nintendo DS": "ds",
+  "Nintendo DSi": "dsi",
+  "Pokemon Mini": "mini",
+  "Virtual Boy": "vb",
+  "PlayStation": "ps1",
+  "PlayStation 2": "ps2",
+  "PlayStation Portable": "psp",
+  "Atari 2600": "2600",
+  "Atari 7800": "7800",
+  "Atari Jaguar": "jag",
+  "Atari Jaguar CD": "jcd",
+  "Atari Lynx": "lynx",
+  "SG-1000": "sg1k",
+  "Master System": "sms",
+  "Game Gear": "gg",
+  "Genesis/Mega Drive": "md",
+  "Sega CD": "scd",
+  "32X": "32x",
+  "Saturn": "sat",
+  "Dreamcast": "dc",
+  "PC Engine/TurboGrafx-16": "pce",
+  "PC Engine CD/TurboGrafx-CD": "pccd",
+  "PC-8000/8800": "8088",
+  "PC-FX": "pc-fx",
+  "Neo Geo CD": "ngcd",
+  "Neo Geo Pocket": "ngp",
+  "3DO Interactive Multiplayer": "3do",
+  "Amstrad CPC": "cpc",
+  "Apple II": "a2",
+  "Arcade": "arc",
+  "Arcadia 2001": "a2001",
+  "Arduboy": "ard",
+  "ColecoVision": "cv",
+  "Elektor TV Games Computer": "elek",
+  "Fairchild Channel F": "chf",
+  "Intellivision": "intv",
+  "Interton VC 4000": "vc4000",
+  "Magnavox Odyssey 2": "mo2",
+  "Mega Duck": "duck",
+  "MSX": "msx",
+  "Standalone": "exe",
+  "Uzebox": "uze",
+  "Vectrex": "vect",
+  "WASM-4": "wasm4",
+  "Watara Supervision": "wsv",
+  "WonderSwan": "ws"
+};
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 client.commands = new Collection();
@@ -213,7 +270,7 @@ async function checkOneUser(discordId, user) {
     };
   }
 
-  // Préparer toutes les notifications
+  // Préparer toutes les notifications (sans image)
   const notifications = [];
 
   for (const achievement of newAchievements) {
@@ -227,7 +284,13 @@ async function checkOneUser(discordId, user) {
     const percent = Math.min(100, Math.ceil((gameProgress.achieved / gameProgress.total) * 100));
 
     if (percent > 0) {
-      const imageBuffer = await generateAchievementImage({
+      notifications.push({
+        type: "achievement",
+        achievement,
+        percent
+      });
+
+      addToHistory(discordId, {
         title: achievement.title,
         points: achievement.points,
         username: user.raUsername,
@@ -235,21 +298,10 @@ async function checkOneUser(discordId, user) {
         gameTitle: achievement.gameTitle,
         badgeUrl: achievement.badgeUrl,
         progressPercent: percent,
-        backgroundImage: user.background,
-        textColor: user.color,
         hardcore: achievement.hardcoreMode,
-        lang: "en" // neutre, sera adapté côté embed si besoin
+        consoleicon: consoleTable[achievement.consoleName]
       });
-
-      notifications.push({
-        type: "achievement",
-        achievement,
-        percent,
-        imageBuffer
-      });
-
-      addToHistory(discordId, achievement.badgeUrl, achievement.hardcoreMode, imageBuffer);
-      updateStats(achievement.points);
+      updateStats_Points(achievement.points,achievement.hardcoreMode);
 
       log(`✅ ${user.raUsername} → succès ${achievement.achievementId} (${percent}% ${achievement.hardcoreMode ? 'H' : 'S'})`);
     }
@@ -300,6 +352,7 @@ async function checkOneUser(discordId, user) {
         total, hardcore
       });
       changeLatestMaster(discordId,[gameInfo?.imageIcon, true]);
+      updateStats_Master("mastery");
       log(`🏅 ${user.raUsername} a masterisé ${gameInfo?.title}`);
     } else if (total > 0 && softcore === total) {
       notifications.push({
@@ -310,11 +363,14 @@ async function checkOneUser(discordId, user) {
         total, softcore
       });
       changeLatestMaster(discordId,[gameInfo?.imageIcon, false]);
+      updateStats_Master("completion");
       log(`🏅 ${user.raUsername} a terminé ${gameInfo?.title}`);
     }
   }
 
   // --- Étape 2 : diffusion ---
+  // cache éphémère local au cycle
+  const achievementImageCache = new Map();
 
   for (const [guildId, guildData] of Object.entries(guildsDB)) {
     if (!guildData.users.includes(discordId)) continue;
@@ -328,11 +384,34 @@ async function checkOneUser(discordId, user) {
 
     for (const notif of notifications) {
       switch (notif.type) {
-        case "achievement":
+        case "achievement": {
+
+          const cacheKey = `${notif.achievement.achievementId}_${lang}`;
+          let imageBuffer = achievementImageCache.get(cacheKey);
+
+          if (!imageBuffer) {
+            imageBuffer = await generateAchievementImage({
+              title: notif.achievement.title,
+              points: notif.achievement.points,
+              username: user.raUsername,
+              description: notif.achievement.description,
+              gameTitle: notif.achievement.gameTitle,
+              badgeUrl: notif.achievement.badgeUrl,
+              progressPercent: notif.percent,
+              backgroundImage: user.background,
+              textColor: user.color,
+              hardcore: notif.achievement.hardcoreMode,
+              lang,
+              consoleicon: consoleTable[notif.achievement.consoleName]
+            });
+            achievementImageCache.set(cacheKey, imageBuffer);
+          }
+
           await channel.send({
-            files: [{ attachment: notif.imageBuffer, name: 'achievement.png' }]
+            files: [{ attachment: imageBuffer, name: 'achievement.png' }]
           });
           break;
+        }
 
         case "aotw":
           await channel.send({

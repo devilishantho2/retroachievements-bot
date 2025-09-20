@@ -1,5 +1,6 @@
 {
-    "notInDM": "❌ This command must be used in a Discord server, not in a private message.",
+    "notInDM": "❌ This command must be used in a Discord server, not in a private message.",    
+    "userNotRegistered": "⚠️ User <@{userId}> is not registered",
 
     "_DESC1_": "INDEX.JS",
     "aotwUnlockedTitle": "🎉 AOTW unlocked!",
@@ -15,7 +16,6 @@
 
     "_DESC2_": "GENERATEIMAGE.JS",
     "unlockHeader": "{username} has just unlocked :",
-    "gameTitle": "Game : {gameTitle} | {progressPercent}%",
 
     "_DESC3_": "VOTE.JS",
     "voteTitle": "💖 Support the bot",
@@ -29,7 +29,6 @@
 
     "DESC5_": "ADMIN_COMMANDS.JS",
     "salonDefiniSuccess": "✅ Channel set successfully. Achievements will now be sent here.",
-    "userNotRegistered": "⚠️ User <@{userId}> is not registered",
     "userRemoved": "✅ User <@{userId}> has been removed from the server.",
     "noUser": "⚠️ No users are registered on this server.",
     "cleanComplete": "✅ Cleanup complete: {number} user(s) removed from the server because they are no longer present.",
@@ -48,7 +47,38 @@
 
     "_DESC8_": "STATS.js",
     "statsTitle": "📊 Bot Statistics",
-    "statsTotal": "⭐ Points Breakdown"
+    "statsTotal": "⭐ Points Breakdown (H/S)",
+    "statsRewards": "🏆 Rewards",
+    "usersStats": "💾 Users               : ",
+    "guildsStats": "🔗 Guilds              : ",
+    "apiStats": "📡 API Calls           : ",
+    "imagesStats": "🖼️ Images generated    : ",
+    "statsRequested": "Requested by {username}",
+    
+    "_DESC9_": "GENERATELATESTIMAGE.js",
+    "latestCheevosTitle": "{username} latest cheevos",
+    "errorLatestCheevos": "Unable to generate the latest achievements.",
 
-  }
+    "_DESC10_": "LEAVE.js",
+    "leaveNotInGuild": "ℹ️ You are not registered on this server.",
+    "leaveNotInBot": "ℹ️ You are not registered on this bot.",
+    "leaveGuildSuccess": "✅ You have been removed from this server.",
+    "leaveBotSuccess": "✅ You have been completely removed from the bot.",
+
+    "_DESC11_": "CUSTOMIZE.js",
+    "customNotRegistered": "❌ You must first register with `/register` before customizing your settings.",
+    "customWrongColor": "❌ Invalid format. Use a hex code like `#ff0000`.",
+    "customColorSuccess": "✅ Color set to `{color}`",
+    "customWrongImage": "❌ The URL must be a direct link to an image (.jpg, .jpeg, .png, or .webp).",
+    "customImageSuccess": "✅ Your background image has been successfully updated!",
+
+    "_DESC12_": "TESTCHEEVOS.js",
+    "testNotRegistered": "User not registered.",
+
+    "_DESC13_": "LASTSEEN.js",
+    "lastError": "❌ You are not registered on the bot or the username does not exist.",
+    "lastNoActivity": "❌ No recent activity found for **{username}**.",
+    "lastTitle": "🎮 Last activity of {username}",
+    "lastPoints": "Total points: {points}"
+}
   

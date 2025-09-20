@@ -50,7 +50,7 @@ export default {
       addUser(discordId, guildId, {
         raUsername,
         raApiKey,
-        background: "https://raw.githubusercontent.com/devilishantho2/devilishantho2.github.io/refs/heads/main/default_background.png",
+        background: "data/backgrounds/default_background.png",
         color: "#ffffff",
         lastAchievement: null,
         aotwUnlocked: false,

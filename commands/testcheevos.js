@@ -1,14 +1,15 @@
 import { SlashCommandBuilder, MessageFlags } from 'discord.js';
 import { loadDB } from '../db.js';
 import { generateAchievementImage } from '../generateImage.js';
+import { t } from '../locales.js';
 
 export default {
   data: new SlashCommandBuilder()
     .setName('testcheevos')
-    .setDescription('Affiche un succès pour tester les personnalisations')
+    .setDescription('Display an achievement to test the customizations')
     .addIntegerOption(option =>
       option.setName('points')
-        .setDescription('Nombre de points du succès')
+        .setDescription('Achievement\'s points')
         .setRequired(true)
         .setMinValue(0)
         .setMaxValue(50)
@@ -18,9 +19,13 @@ export default {
     const usersDB = loadDB('usersdb');
     const user = usersDB[interaction.user.id];
 
+    const guildId = interaction.guild?.id;
+    const guildsDB = loadDB('guildsdb');
+    const lang = guildsDB[guildId]?.lang || 'en';
+
     if (!user) {
       return interaction.reply({
-        content: 'Utilisateur non enregistré.',
+        content: t(lang, "testNotRegistered"),
         ephemeral: true
       });
     }
@@ -39,7 +44,9 @@ export default {
       progressPercent: 50,
       backgroundImage: user.background,
       textColor: user.color,
-      hardcore: true
+      hardcore: true,
+      lang,
+      consoleicon: "gba"
     });
 
     await interaction.editReply({

@@ -1,15 +1,16 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { buildAuthorization, getUserSummary } from '@retroachievements/api';
 import { loadDB } from '../db.js';
+import { t } from '../locales.js';
 
 export default {
   data: new SlashCommandBuilder()
     .setName('lastseen')
-    .setDescription("Affiche les infos du dernier jeu joué par un utilisateur RA.")
+    .setDescription("Show the last game played by a RA user.")
     .addStringOption(option =>
       option
         .setName('username')
-        .setDescription("Pseudo RetroAchievements (sinon utilise ton compte enregistré)")
+        .setDescription("RetroAchievements username")
         .setRequired(false)
     ),
 
@@ -22,9 +23,13 @@ export default {
     const raUsername = inputUsername || user?.raUsername;
     const raApiKey = user?.raApiKey;
 
+    const guildId = interaction.guild?.id;
+    const guildsDB = loadDB('guildsdb');
+    const lang = guildsDB[guildId]?.lang || 'en';
+
     if (!raUsername || !raApiKey) {
       return interaction.reply({
-        content: '❌ Impossible de déterminer le pseudo RetroAchievements. Utilise `/register` ou spécifie un nom d’utilisateur.',
+        content: t(lang, "lastError"),
         ephemeral: true,
       });
     }
@@ -44,12 +49,12 @@ export default {
       const totalPoints = summary.totalPoints;
 
       if (!lastGame || !lastGame.title) {
-        return interaction.reply(`❌ Aucune activité récente trouvée pour **${raUsername}**.`);
+        return interaction.reply(t(lang, "lastNoActivity", { username : raUsername }));
       }
 
       const embed = {
-        title: `🎮 Dernière activité de ${raUsername}`,
-        description: `**[${lastGame.title}](http://retroachievements.org/game/${summary.lastGameId})**\n${richPresence || 'Aucune activité visible.'}`,
+        title: t(lang, "lastTitle", { username : raUsername }),
+        description: `**[${lastGame.title}](http://retroachievements.org/game/${summary.lastGameId})**\n${richPresence || 'Rich presence error'}`,
         color: 0x00b0f4,
         thumbnail: {
           url: `https://retroachievements.org${userPic}`,
@@ -58,7 +63,7 @@ export default {
           url: `https://retroachievements.org${lastGame.imageBoxArt}`,
         },
         footer: {
-          text: `Points totaux : ${totalPoints}`,
+          text: t(lang, "lastPoints", { points : totalPoints }),
         },
         timestamp: new Date(),
       };
@@ -66,7 +71,7 @@ export default {
       await interaction.reply({ embeds: [embed] });
     } catch (error) {
       console.error('Erreur /lastseen :', error);
-      await interaction.reply(`❌ Une erreur est survenue lors de la récupération des données pour **${raUsername}**.`);
+      await interaction.reply(`❌ Error`);
     }
   },
 };

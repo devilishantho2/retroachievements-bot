@@ -1,8 +1,8 @@
 import { SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder, EmbedBuilder, MessageFlags, Formatters } from 'discord.js';
-import { loadDB } from '../db.js';
+import { changeLatestMaster, loadDB } from '../db.js';
 import { t } from '../locales.js';
 
-const BOT_VERSION = '1.2.6';
+const BOT_VERSION = '1.2.7';
 
 const commandText = { 
   title: {
@@ -108,12 +108,31 @@ const commandsInfo = {
     fr: {
       description: 'Affiche les dernières informations de jeu d\'un utilisateur.',
       usage: '/lastseen <username>',
-      details: 'Cette commande affiche les dernieres informations de jeu d\'un utilisateur, ou les dernieres informations de jeu de l\'utilisateur.'
+      details: 'Cette commande affiche les dernieres informations de jeu d\'un utilisateur, ou les dernieres informations de jeu de l\'utilisateur si aucun pseudo est donné.'
     },
     en: {
       description: 'Displays the latest gaming information for a user.',
       usage: '/lastseen <username>',
       details: 'This command displays the latest gaming information for a specified user, or for the command sender if no username is given.'
+    }
+  },
+  vote: {
+    fr: {
+      description: 'Affiche les liens pour voter pour le bot sur top.gg.',
+      usage: '/vote',
+      details: 'Cette commande affiche les liens pour voter pour le bot sur top.gg (vote et avis), afin d\'aider le bot à se faire connaitre'
+    },
+    en: {
+      description: 'Displays the links to vote for the bot on top.gg.',
+      usage: '/vote',
+      details: 'This command shows the links to vote for the bot on top.gg (vote and review), to help the bot gain visibility.'
+    }
+  },
+  latestcheevos: {
+    fr: {
+      description: 'Affiche les derniers succès d\'un utilisateur',
+      usage: '/latestcheevos <username>',
+      details: 'Cette commande affiche les derniers succès d\'un utilisateur, ou les derniers succès de l\'utilisateur si aucun pseudo est donné.'
     }
   }
 };
@@ -185,7 +204,7 @@ export default {
           .addComponents(
             new StringSelectMenuBuilder()
               .setCustomId('help_select')
-              .setPlaceholder('Menu expiré')
+              .setPlaceholder('Timeout')
               .addOptions(options)
               .setDisabled(true)
           );

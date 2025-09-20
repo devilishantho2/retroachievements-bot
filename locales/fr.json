@@ -1,5 +1,6 @@
 {
     "notInDM": "❌ Cette commande doit être utilisée dans un serveur Discord, pas en message privé.",
+    "userNotRegistered": "⚠️ L'utilisateur <@{userId}> n'est pas enregistré",
 
     "_DESC1_": "INDEX.JS",
     "aotwUnlockedTitle": "🎉 AOTW débloqué !",
@@ -15,7 +16,6 @@
 
     "_DESC2_": "GENERATEIMAGE.JS",
     "unlockHeader": "{username} vient de débloquer :",
-    "gameTitle": "Jeu : {gameTitle} | {progressPercent}%",
 
     "_DESC3_": "VOTE.JS",
     "voteTitle": "💖 Soutenir le bot",
@@ -29,7 +29,6 @@
 
     "_DESC5_": "ADMIN_COMMANDS.JS",
     "salonDefiniSuccess": "✅ Salon défini avec succès. Les succès seront désormais envoyés ici.",
-    "userNotRegistered": "⚠️ L'utilisateur <@{userId}> n'est pas enregistré",
     "userRemoved": "✅ Utilisateur <@{userId}> retiré du serveur.",
     "noUser": "⚠️ Aucun utilisateur enregistré sur ce serveur.",
     "cleanComplete": "✅ Nettoyage effectué : {number} utilisateur(s) retiré(s) du serveur car ils n'y sont plus.",
@@ -48,6 +47,37 @@
 
     "_DESC8_": "STATS.js",
     "statsTitle": "📊 Statistiques du Bot",
-    "statsTotal": "⭐ Répartition des Points"
+    "statsTotal": "⭐ Répartition des Points (H/S)",
+    "statsRewards": "🏆 Récompenses",
+    "usersStats": "💾 Utilisateurs      : ",
+    "guildsStats": "🔗 Serveurs          : ",
+    "apiStats": "📡 Requêtes API      : ",
+    "imagesStats": "🖼️ Images générées   : ",
+    "statsRequested": "Demandé par {username}",
 
-  }
+    "_DESC9_": "GENERATELATESTIMAGE.js",
+    "latestCheevosTitle": "Derniers succès de {username}",
+    "errorLatestCheevos": "Impossible de générer les derniers succès.",
+
+    "_DESC10_": "LEAVE.js",
+    "leaveNotInGuild": "ℹ️ Tu n'es pas enregistré sur ce serveur.",
+    "leaveNotInBot": "ℹ️ Tu n'es pas enregistré sur ce bot.",
+    "leaveGuildSuccess": "✅ Tu as été retiré de ce serveur.",
+    "leaveBotSuccess": "✅ Tu as été supprimé complètement du bot.",
+
+    "_DESC11_": "CUSTOMIZE.js",
+    "customNotRegistered": "❌ Tu dois d'abord t'enregistrer avec `/register` avant de personnaliser tes paramètres.",
+    "customWrongColor": "❌ Format invalide. Utilise un code hex comme `#ff0000",
+    "customColorSuccess": "✅ Couleur définie sur `{color}`",
+    "customWrongImage": "❌ L'URL doit être un lien direct vers une image (.jpg, .jpeg, .png ou .webp).",
+    "customImageSuccess": "✅ Ton image de fond a bien été mise à jour !",
+
+    "_DESC12_": "TESTCHEEVOS.js",
+    "testNotRegistered": "Utilisateur non enregistré.",
+
+    "_DESC13_": "LASTSEEN.js",
+    "lastError": "❌ Tu n'es pas enregistré sur le bot ou le pseudo n'existe pas.",
+    "lastNoActivity": "❌ Aucune activité récente trouvée pour **{username}**.",
+    "lastTitle": "🎮 Dernière activité de {username}",
+    "lastPoints": "Points totaux : {points}"
+}

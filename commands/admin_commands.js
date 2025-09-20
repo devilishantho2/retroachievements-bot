@@ -1,4 +1,3 @@
-// commands/admin.js
 import { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } from 'discord.js';
 import { loadDB, saveDB } from '../db.js';
 import { t } from '../locales.js';

@@ -3,7 +3,7 @@ import { SlashCommandBuilder, MessageFlags } from 'discord.js';
 export default {
   data: new SlashCommandBuilder()
     .setName('ping')
-    .setDescription('Renvoie le temps de réponse du bot'),
+    .setDescription('Returns the bot\'s response time'),
 
   async execute(interaction) {
     // On defer la réponse en mode éphemère (visible que par l'utilisateur)
@@ -13,6 +13,6 @@ export default {
     const latency = Date.now() - interaction.createdTimestamp;
 
     // On édite la réponse avec la latence calculée
-    await interaction.editReply(`Pong ! 🏓 Temps de réponse : ${latency} ms`);
+    await interaction.editReply(`Pong ! 🏓 ${latency} ms`);
   },
 };

@@ -20,10 +20,9 @@ registerFont(path.join(__dirname, 'fonts/PixelOperator-Bold.ttf'), {
 const assombrissement = 50;
 const trophy_url = "https://raw.githubusercontent.com/devilishantho2/devilishantho2.github.io/refs/heads/main/trophy.png";
 
-export async function generateLatestImage(discordId) {
+export async function generateLatestImage(discordId, lang = 'en') {
   const usersDB = loadDB('usersdb');
   const userData = usersDB[discordId];
-  if (!userData) throw new Error('User not found');
 
   const width = 800;
   const height = 250;
@@ -46,7 +45,7 @@ export async function generateLatestImage(discordId) {
   ctx.globalAlpha = 1.0;
 
   // 🔲 Fond arrondi derrière le titre
-  const header = `${userData.raUsername} latest cheevos`;
+  const header = t(lang, 'latestCheevosTitle', { username : userData.raUsername });
   ctx.font = '35px "Pixel Operator Gras"';
   const headerMetrics = ctx.measureText(header);
   const paddingX = 10;
@@ -160,7 +159,8 @@ export async function generateLatestImage(discordId) {
     const y = gridStartY + row * (badgeSize + gridSpacing);
 
     if (history[i]) {
-      const [badgePath, hardcore] = history[i];
+      const badgePath = history[i].badgeUrl;
+      const hardcore = history[i].hardcore;
       try {
         const badgeImg = await loadImage(`https://media.retroachievements.org${badgePath}`);
         ctx.shadowColor = 'black';

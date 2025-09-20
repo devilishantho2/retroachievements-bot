@@ -1,13 +1,14 @@
 import { SlashCommandBuilder, MessageFlags } from 'discord.js';
 import { loadDB, saveDB } from '../db.js';
+import { t } from '../locales.js';
 
 export default {
   data: new SlashCommandBuilder()
     .setName('leave')
-    .setDescription("Se retirer du serveur ou complètement du bot")
+    .setDescription("Unregister from the server or from the bot entirely")
     .addStringOption(option =>
       option.setName('type')
-        .setDescription("Cible de la suppression")
+        .setDescription("Target")
         .setRequired(true)
         .addChoices(
           { name: 'server', value: 'server' },
@@ -19,10 +20,12 @@ export default {
     const guildId = interaction.guild?.id;
     const discordId = interaction.user.id;
     const type = interaction.options.getString('type');
+    const guildsDB = loadDB('guildsdb');
+    const lang = guildsDB[guildId]?.lang || 'en';
 
     if (!guildId) {
       return interaction.reply({
-        content: '❌ Cette commande doit être utilisée dans un serveur.',
+        content: t(lang, "notInDM"),
         flags: MessageFlags.Ephemeral,
       });
     }
@@ -33,7 +36,7 @@ export default {
     if (type === 'server') {
       if (!guilds[guildId] || !guilds[guildId].users.includes(discordId)) {
         return interaction.reply({
-          content: "ℹ️ Tu n'es pas enregistré sur ce serveur.",
+          content: t(lang, "leaveNotInGuild"),
           flags: MessageFlags.Ephemeral,
         });
       }
@@ -43,7 +46,7 @@ export default {
       saveDB(guilds, 'guildsdb');
 
       return interaction.reply({
-        content: '✅ Tu as été retiré de ce serveur.',
+        content: t(lang, "leaveGuildSuccess"),
         flags: MessageFlags.Ephemeral,
       });
     }
@@ -51,7 +54,7 @@ export default {
     if (type === 'bot') {
       if (!users[discordId]) {
         return interaction.reply({
-          content: "ℹ️ Tu n'es pas enregistré dans le bot.",
+          content: t(lang, "leaveNotInBot"),
           flags: MessageFlags.Ephemeral,
         });
       }
@@ -67,7 +70,7 @@ export default {
       saveDB(guilds, 'guildsdb');
 
       return interaction.reply({
-        content: '✅ Tu as été supprimé complètement du bot.',
+        content: t(lang, "leaveBotSuccess"),
         flags: MessageFlags.Ephemeral,
       });
     }

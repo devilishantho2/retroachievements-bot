@@ -1,6 +1,7 @@
   import path from 'path';
   import { fileURLToPath } from 'url';
   import { createCanvas, loadImage, registerFont } from 'canvas';
+  import { incrementImagesGenerated } from './db.js';
   import { t } from './locales.js';
 
   // Pour __dirname compatible ES modules
@@ -17,7 +18,7 @@
   });
 
   const assombrissement = 50;
-  const default_background = "images/default_background.png";
+  const default_background = "data/backgrounds/default_background.png";
 
   export async function generateAchievementImage({
     title,
@@ -30,11 +31,12 @@
     backgroundImage,
     textColor,
     hardcore = false,
-    lang = "en"
+    lang = "en",
+    consoleicon = `unknown`
   }) {
     const width = 800;
     const height = 250;
-    const canvas = createCanvas(width, height);
+    const canvas = createCanvas(width, height); 
     const ctx = canvas.getContext('2d');
 
     // 🖼️ Fond
@@ -65,6 +67,8 @@
     try {
       const trophy = await loadImage(`images/trophy.png`);
       ctx.drawImage(trophy, 20, 15, 40, 40); // X, Y, width, height
+      const cicon = await loadImage(`images/systems/${consoleicon}.png`);
+      ctx.drawImage(cicon, 20, height - 43, 32, 32);
     } catch (e) {
       // ne rien faire si échec
     }
@@ -129,7 +133,7 @@
     wrapTextSkewed(ctx, `« ${description} »`, 20, 130, width - 40 - 160, 26, -0.2);
 
     ctx.font = '22px "Pixel Operator HB Normal"';
-    ctx.fillText(t(lang, 'gameTitle', { gameTitle: gameTitle, progressPercent: progressPercent}), 20, height - 20);
+    ctx.fillText(`${gameTitle} | ${progressPercent}%`, 60, height - 20);
 
     // 🎖️ Badge + barre de progression
     try {
@@ -166,7 +170,9 @@
     ctx.shadowOffsetY = 0;
     ctx.shadowBlur = 0;
 
-    return canvas.toBuffer('image/png');
+    const buffer = canvas.toBuffer('image/png');
+    incrementImagesGenerated(buffer.length);
+    return buffer;
   }
 
   // Fonction d’habillage de texte (multiligne)
