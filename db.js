@@ -207,6 +207,7 @@ export function updateStats_Points(points,hardcore) {
     else if (points === 10) statsDB.total10_h += 1;
     else if (points === 25) statsDB.total25_h += 1;
     else if (points === 50) statsDB.total50_h += 1;
+    else if (points === 100) statsDB.total100_h += 1;
   } else {
     statsDB.totalCheevos_s += 1;
     statsDB.totalPoints_s += points;
@@ -216,6 +217,7 @@ export function updateStats_Points(points,hardcore) {
     else if (points === 10) statsDB.total10_s += 1;
     else if (points === 25) statsDB.total25_s += 1;
     else if (points === 50) statsDB.total50_s += 1;
+    else if (points === 100) statsDB.total100_s += 1;
   }
   saveDB(statsDB, 'statsdb');
 }

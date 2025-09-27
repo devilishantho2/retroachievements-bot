@@ -35,7 +35,7 @@ process.on('unhandledRejection', reason => {
   console.error('❌ Unhandled Rejection:', reason);
 });
 
-const CHECK_INTERVAL = 2 * 1000; // 3 minutes
+const CHECK_INTERVAL = 3 * 60 * 1000; // 3 minutes
 const userCheckState = {}; // { discordId: { nextCheckTime } }
 
 const consoleTable = {
@@ -474,7 +474,7 @@ client.once('ready', async () => {
   setInterval(() => updatePresence(client), 10 * 60 * 1000);
 
   // Cron toutes les 10 secondes
-  cron.schedule('*/2 * * * * *', async () => {
+  cron.schedule('*/10 * * * * *', async () => {
     const usersDB = loadDB('usersdb');
     const now = Date.now();
 

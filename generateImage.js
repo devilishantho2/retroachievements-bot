@@ -76,7 +76,12 @@
     // Texte
     ctx.fillStyle = textColor;
     ctx.font = '35px "Pixel Operator Gras"';
-    const titleText = ` ${title} (${points})`;
+    if (title.length > 42) {
+      title = title.slice(0,31);
+      title = title + '[…]';
+    }
+    var titleText = ` ${title} (${points})`;
+
     const titleX = 60;
     const titleY = 45;
     

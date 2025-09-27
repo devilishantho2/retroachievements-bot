@@ -12,7 +12,7 @@ export default {
         .setDescription('Achievement\'s points')
         .setRequired(true)
         .setMinValue(0)
-        .setMaxValue(50)
+        .setMaxValue(100)
     ),
 
   async execute(interaction) {
