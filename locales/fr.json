@@ -7,10 +7,10 @@
     "aotwUnlockedDesc": "**{username}** a débloqué le succès de la semaine : **{title}** !",
     "aotmUnlockedTitle": "🏅 AOTM débloqué !",
     "aotmUnlockedDesc": "**{username}** a débloqué le succès du mois : **{title}** !",
-    "gameMasteredTitle": "<:mastered:1413558228960153752> Jeu masterisé !",
-    "gameMasteredDesc": "**{username}** a masterisé le jeu **{gameTitle}** {consoleName}",
+    "gameMasteredTitle": "<:mastered:1419075753697345598> Jeu masterisé !",
+    "gameMasteredDesc": "**{username}** a masterisé le jeu **{gameTitle}** sur {consoleName}",
     "gameMasteredFooter": "Masterisé avec {hardcore}/{total} succès en mode hardcore",
-    "gameMasteredSoftcoreTitle": "<:completed:1413558220320018573> Jeu terminé !",
+    "gameMasteredSoftcoreTitle": "<:completed:1419075734030385203> Jeu terminé !",
     "gameMasteredSoftcoreDesc": "**{username}** a terminé le jeu **{gameTitle}** {consoleName}",
     "gameMasteredSoftcoreFooter": "Terminé avec {softcore}/{total} succès en mode softcore",
 

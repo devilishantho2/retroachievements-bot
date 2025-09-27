@@ -16,7 +16,6 @@ export default {
 
   async execute(interaction) {
     const targetUser = interaction.options.getUser('cible') || interaction.user;
-    console.log(targetUser);
     const usersDB = loadDB('usersdb');
     const user = usersDB[targetUser.id];
     const guildId = interaction.guild?.id;

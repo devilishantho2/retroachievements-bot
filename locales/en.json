@@ -7,10 +7,10 @@
     "aotwUnlockedDesc": "**{username}** unlocked the achievement of the week: **{title}**!",
     "aotmUnlockedTitle": "🏅 AOTM unlocked!",
     "aotmUnlockedDesc": "**{username}** unlocked the achievement of the month: **{title}**!",
-    "gameMasteredTitle": "🎮 Game mastered!",
-    "gameMasteredDesc": "**{username}** mastered the game **{gameTitle}** {consoleName}",
+    "gameMasteredTitle": "<:mastered:1419075753697345598> Game mastered!",
+    "gameMasteredDesc": "**{username}** mastered the game **{gameTitle}** on {consoleName}",
     "gameMasteredFooter": "Mastered with {hardcore}/{total} hardcore achievements",
-    "gameMasteredSoftcoreTitle": "🎮 Game completed !",
+    "gameMasteredSoftcoreTitle": "<:completed:1419075734030385203> Game completed !",
     "gameMasteredSoftcoreDesc": "**{username}** completed the game **{gameTitle}** {consoleName}",
     "gameMasteredSoftcoreFooter": "Completed with {softcore}/{total} softcore achievements",
 

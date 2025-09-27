@@ -35,7 +35,7 @@ process.on('unhandledRejection', reason => {
   console.error('❌ Unhandled Rejection:', reason);
 });
 
-const CHECK_INTERVAL = 30 * 1000; // 3 minutes
+const CHECK_INTERVAL = 2 * 1000; // 3 minutes
 const userCheckState = {}; // { discordId: { nextCheckTime } }
 
 const consoleTable = {
@@ -465,16 +465,19 @@ async function checkOneUser(discordId, user) {
   }
 }
 
+const userLocks = new Set();
+
 client.once('ready', async () => {
   log(`🤖 Connecté en tant que ${client.user.tag}`);
 
   updatePresence(client);
   setInterval(() => updatePresence(client), 10 * 60 * 1000);
 
-  cron.schedule('*/10 * * * * *', async () => {
+  // Cron toutes les 10 secondes
+  cron.schedule('*/2 * * * * *', async () => {
     const usersDB = loadDB('usersdb');
     const now = Date.now();
-  
+
     for (const [discordId, user] of Object.entries(usersDB)) {
       if (!userCheckState[discordId]) {
         // premier passage → répartir un peu au hasard dans les 3min
@@ -482,19 +485,28 @@ client.once('ready', async () => {
           nextCheckTime: now + Math.floor(Math.random() * CHECK_INTERVAL)
         };
       }
-  
+
       if (now >= userCheckState[discordId].nextCheckTime) {
+        if (userLocks.has(discordId)) {
+          continue;
+        }
+
+        userLocks.add(discordId);
         try {
           await checkOneUser(discordId, user);
         } catch (err) {
           console.error(`❌ Erreur check ${user.raUsername}:`, err);
+        } finally {
+          userLocks.delete(discordId);
         }
+
         // replanifie dans 3min
         userCheckState[discordId].nextCheckTime = now + CHECK_INTERVAL;
       }
     }
-  });  
+  });
 
+  // Cron hebdo pour AOTW
   cron.schedule('0 5 * * 1', async () => {
     try {
       log('⏰ Lancement du cron hebdo pour mise à jour AOTW');
@@ -503,7 +515,7 @@ client.once('ready', async () => {
       console.error('❌ Erreur cron AOTW:', err);
     }
   });
-
 });
+
 
 client.login(process.env.DISCORD_TOKEN);
