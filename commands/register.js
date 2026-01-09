@@ -1,10 +1,9 @@
 import { SlashCommandBuilder, MessageFlags } from 'discord.js';
-import { addUser, loadDB } from '../db.js';
+import { addUser, loadDB, saveDB } from '../db.js';
 import { t } from '../locales.js';
-import dotenv from 'dotenv';
-import { buildAuthorization, getUserProfile } from "@retroachievements/api";
-
-dotenv.config();
+import { buildAuthorization, getUserSummary, getUserAwards, getUserCompletedGames } from "@retroachievements/api";
+import { log } from '../utils.js';
+import { consoleTable } from '../consoleTable.js';
 
 export default {
   data: new SlashCommandBuilder()
@@ -33,46 +32,96 @@ export default {
     }
 
     const discordId = interaction.user.id;
-    const raUsername = interaction.options.getString('username');
+    const username = interaction.options.getString('username');
     const raApiKey = interaction.options.getString('apikey');
 
     // ✅ Vérification API RetroAchievements
     try {
       const authorization = buildAuthorization({
-        username: raUsername,
+        username: username,
         webApiKey: raApiKey
       });
 
       // Essaye de récupérer le profil
-      await getUserProfile(authorization, { username: raUsername });
+      const summary = await getUserSummary(authorization, { username: username, recentGamesCount: 3});
+      const awards = await getUserAwards(authorization, { username: username });
+
+      const recentAchievements = Object.values(summary.recentAchievements)
+      .flatMap(game => Object.values(game))
+      .sort((a, b) => new Date(b.dateAwarded) - new Date(a.dateAwarded));
+
+      recentAchievements.reverse()
+
+      const achievementsOffset = {};
+      for (const ach of recentAchievements) {
+          const id = ach.gameId;
+          achievementsOffset[id] = (achievementsOffset[id] || 0) + 1;
+      }
+    
+      var gameProgress = {};
+      for (const [gameId, gameAward] of Object.entries(summary.awarded || {})) {
+          gameProgress[gameId] = {
+          achieved: gameAward.numAchieved,
+          achievedH: gameAward.numAchievedHardcore,
+          offset: achievementsOffset[gameId]-1,
+          total: gameAward.numPossibleAchievements || 1
+        };
+      }
+    
+      var gameConsole = {};
+      for (const [gameId,game] of Object.entries(summary.recentlyPlayed || [])) {
+          gameConsole[game.gameId] = consoleTable[game.consoleName];
+      };
+
+      var latestMaster = [];
+      if (awards.masteryAwardsCount > 0 || awards.completionAwardsCount > 0) {
+        for (const award of awards.visibleUserAwards) {
+          if (award.awardType == "Mastery/Completion") {
+            latestMaster = [award.imageIcon, award.awardDataExtra == 1];
+            continue
+          }
+        }
+      }
+
+      var history = [];
+      for (const achievement of recentAchievements) {
+
+        if (gameProgress[achievement.gameId].total <= 1) continue;
+    
+        const percent = Math.min(100, Math.ceil(((gameProgress[achievement.gameId].achieved - gameProgress[achievement.gameId].offset) / gameProgress[achievement.gameId].total) * 100));
+        gameProgress[achievement.gameId].offset -= 1;
+    
+        const achievementData = {
+          id: achievement.id,
+          title: achievement.title,
+          points: achievement.points,
+          description: achievement.description,
+          gameTitle: achievement.gameTitle,
+          badgeUrl: `/Badge/${achievement.badgeName}.png`,
+          progressPercent: percent,
+          hardcore: achievement.hardcoreAchieved,
+          consoleicon: gameConsole[achievement.gameId]
+        };
+        history.push(achievementData);
+      }
 
       // Si OK → on sauvegarde
       addUser(discordId, guildId, {
-        raUsername,
+        ulid : summary.ulid,
         raApiKey,
         background: "data/backgrounds/default_background.png",
         color: "#ffffff",
-        lastAchievement: null,
+        lastAchievement: [recentAchievements[recentAchievements.length - 1].id,recentAchievements[recentAchievements.length - 1].dateAwarded] || null,
         aotwUnlocked: false,
         aotmUnlocked: false,
-        latestMaster : [],
-        history : []
+        latestMaster : latestMaster,
+        history : history
       });
 
-      const logMessage = `🕹️ ${raUsername} vient de s'enregistrer`;
-      console.log(logMessage);
-
-      try {
-        const logChannel = await interaction.client.channels.fetch(process.env.LOG_CHANNEL_ID);
-        if (logChannel) {
-          await logChannel.send(logMessage);
-        }
-      } catch (err) {
-        console.error("❌ Erreur envoi log Discord :", err);
-      }
+      log(`🕹️ ${summary.user} vient de s'enregistrer`);
 
       await interaction.reply({
-        content: t(lang, "registerSuccess", { username: raUsername }),
+        content: t(lang, "registerSuccess", { username: summary.user }),
         flags: MessageFlags.Ephemeral,
       });
 
@@ -80,7 +129,7 @@ export default {
       console.error("❌ Erreur RA API :", err);
 
       await interaction.reply({
-        content: t(lang, "registerError", { username: raUsername }),
+        content: t(lang, "registerError"),
         flags: MessageFlags.Ephemeral,
       });
     }

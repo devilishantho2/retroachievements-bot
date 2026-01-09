@@ -37,7 +37,7 @@ export default {
       color,
       fields: [
         { name: 'Points', value: `${aotm.points}`, inline: true },
-        { name: t(lang, "aotGame"), value: aotm.gameTitle ? `[${aotm.gameTitle}](https://retroachievements.org/game/${aotm.game.id})` : 'N/A', inline: true },
+        { name: t(lang, "aotGame"), value: aotm.gameTitle ? `[${aotm.gameTitle}](https://retroachievements.org/game/${aotm.gameid})` : 'N/A', inline: true },
       ],
       timestamp: new Date(),
       footer: {

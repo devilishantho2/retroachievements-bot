@@ -2,6 +2,7 @@ import { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } fro
 import { loadDB } from '../db.js';
 import { generateLatestImage } from '../generateLatestImage.js';
 import { generateAchievementImage } from '../generateImage.js';
+import { buildAuthorization, getUserProfile } from "@retroachievements/api";
 import { t } from '../locales.js';
 
 export default {
@@ -16,11 +17,11 @@ export default {
 
   async execute(interaction) {
     const targetUser = interaction.options.getUser('cible') || interaction.user;
-    const usersDB = loadDB('usersdb');
-    const user = usersDB[targetUser.id];
     const guildId = interaction.guild?.id;
     const guildsDB = loadDB('guildsdb');
     const lang = guildsDB[guildId]?.lang || 'en';
+    const usersDB = loadDB('usersdb');
+    const user = usersDB[targetUser.id];
 
     if (!user) {
       return interaction.reply({
@@ -28,13 +29,26 @@ export default {
       });
     }
 
+    const ulid = user.ulid;
+    const raApiKey = user.raApiKey
+
     await interaction.deferReply();
 
     try {
+
+      const authorization = buildAuthorization({
+        username: ulid,
+        webApiKey: raApiKey
+      });
+
+      let profile;
+      profile = await getUserProfile(authorization, { username: ulid });
+      const username = profile.user
+
       const pages = [];
 
       // 🖼️ Page principale : derniers succès
-      const mainImage = await generateLatestImage(targetUser.id, lang);
+      const mainImage = await generateLatestImage(targetUser.id, lang, username);
       const mainBuffer = mainImage?.data ? Buffer.from(mainImage.data) : mainImage;
       pages.push({ buffer: mainBuffer, name: 'latestcheevos.png' });
 
@@ -48,6 +62,7 @@ export default {
           entry.backgroundImage = userBackground;
           entry.textColor = userColor;
           entry.lang = lang;
+          entry.username = username;
           const historyBuffer = await generateAchievementImage(entry);
           pages.push({ buffer: historyBuffer, name: `history_${i + 1}.png` });
         }

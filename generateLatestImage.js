@@ -20,7 +20,7 @@ registerFont(path.join(__dirname, 'fonts/PixelOperator-Bold.ttf'), {
 const assombrissement = 50;
 const trophy_url = "https://raw.githubusercontent.com/devilishantho2/devilishantho2.github.io/refs/heads/main/trophy.png";
 
-export async function generateLatestImage(discordId, lang = 'en') {
+export async function generateLatestImage(discordId, lang = 'en', username) {
   const usersDB = loadDB('usersdb');
   const userData = usersDB[discordId];
 
@@ -45,7 +45,7 @@ export async function generateLatestImage(discordId, lang = 'en') {
   ctx.globalAlpha = 1.0;
 
   // 🔲 Fond arrondi derrière le titre
-  const header = t(lang, 'latestCheevosTitle', { username : userData.raUsername });
+  const header = t(lang, 'latestCheevosTitle', { username : username });
   ctx.font = '35px "Pixel Operator Gras"';
   const headerMetrics = ctx.measureText(header);
   const paddingX = 10;
@@ -99,7 +99,7 @@ export async function generateLatestImage(discordId, lang = 'en') {
 
   // 🔲 Photo de profil avec drop shadow
   try {
-    const profileImg = await loadImage(`https://media.retroachievements.org/UserPic/${userData.raUsername}.png`);
+    const profileImg = await loadImage(`https://media.retroachievements.org/UserPic/${username}.png`);
     ctx.shadowColor = 'black';
     ctx.shadowOffsetX = 2;
     ctx.shadowOffsetY = 2;

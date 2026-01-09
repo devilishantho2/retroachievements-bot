@@ -55,6 +55,7 @@ export default {
             `🟦 10    : ${statsDB.total10_h+statsDB.total10_s} (${statsDB.total10_h}/${statsDB.total10_s})\n` +
             `🟥 25    : ${statsDB.total25_h+statsDB.total25_s} (${statsDB.total25_h}/${statsDB.total25_s})\n` +
             `🟪 50    : ${statsDB.total50_h+statsDB.total50_s} (${statsDB.total50_h}/${statsDB.total50_s})\n` +
+            `🏳️‍🌈 100    : ${statsDB.total100_h+statsDB.total100_s} (${statsDB.total100_h}/${statsDB.total100_s})\n` +
             "```",
             inline: false,
           },

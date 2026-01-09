@@ -32,7 +32,6 @@ export function addUser(discordId, guildId, data) {
     usersDB[discordId] = data;
   } else {
     // On met à jour les champs sensibles
-    usersDB[discordId].raUsername = data.raUsername;
     usersDB[discordId].raApiKey   = data.raApiKey;
   }
   saveDB(usersDB, 'usersdb');
@@ -40,8 +39,9 @@ export function addUser(discordId, guildId, data) {
   // Gestion guilds.json
   if (!guildsDB[guildId]) {
     guildsDB[guildId] = {
-      channel: 0,
+      channel: null,
       lang: "en",
+      global_notifications: true,
       users: []
     };
   }
@@ -52,13 +52,12 @@ export function addUser(discordId, guildId, data) {
   }
 }
 
-
 // Exemple : mise à jour lastAchievement
-export function setLastAchievement(discordId, achievementId) {
+export function setLastAchievement(discordId, achievementData) {
   const usersDB = loadDB('usersdb');
   const user = usersDB[discordId];
   if (user) {
-    user.lastAchievement = achievementId;
+    user.lastAchievement = achievementData;
     saveDB(usersDB, 'usersdb');
   }
 }

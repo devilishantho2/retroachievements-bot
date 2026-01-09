@@ -32,12 +32,12 @@ export default {
 
     const points = interaction.options.getInteger('points');
 
-    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+    await interaction.deferReply();
 
     const imageBuffer = await generateAchievementImage({
       title: 'League Champion',
       points,
-      username: user.raUsername,
+      username: 'Username',
       description: 'Defeat the current champion and become the Pokémon League Champion',
       gameTitle: 'Pokémon Emerald Version',
       badgeUrl: '/Badge/315508.png',

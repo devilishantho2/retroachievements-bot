@@ -20,14 +20,14 @@ export default {
 
     const usersDB = loadDB('usersdb');
     const user = usersDB[discordId];
-    const raUsername = inputUsername || user?.raUsername;
+    const ulid = inputUsername || user?.ulid;
     const raApiKey = user?.raApiKey;
 
     const guildId = interaction.guild?.id;
     const guildsDB = loadDB('guildsdb');
     const lang = guildsDB[guildId]?.lang || 'en';
 
-    if (!raUsername || !raApiKey) {
+    if (!ulid || !raApiKey) {
       return interaction.reply({
         content: t(lang, "lastError"),
         ephemeral: true,
@@ -35,10 +35,10 @@ export default {
     }
 
     try {
-      const auth = buildAuthorization({ username: raUsername, webApiKey: raApiKey });
+      const auth = buildAuthorization({ username: ulid, webApiKey: raApiKey });
 
       const summary = await getUserSummary(auth, {
-        username: raUsername,
+        username: ulid,
         recentGamesCount: 1,
         recentAchievementsCount: 2,
       });
@@ -49,11 +49,11 @@ export default {
       const totalPoints = summary.totalPoints;
 
       if (!lastGame || !lastGame.title) {
-        return interaction.reply(t(lang, "lastNoActivity", { username : raUsername }));
+        return interaction.reply(t(lang, "lastNoActivity", { username : summary.user }));
       }
 
       const embed = {
-        title: t(lang, "lastTitle", { username : raUsername }),
+        title: t(lang, "lastTitle", { username : summary.user }),
         description: `**[${lastGame.title}](http://retroachievements.org/game/${summary.lastGameId})**\n${richPresence || 'Rich presence error'}`,
         color: 0x00b0f4,
         thumbnail: {

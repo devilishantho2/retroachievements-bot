@@ -13,6 +13,7 @@
     "gameMasteredSoftcoreTitle": "<:completed:1419075734030385203> Jeu terminé !",
     "gameMasteredSoftcoreDesc": "**{username}** a terminé le jeu **{gameTitle}** {consoleName}",
     "gameMasteredSoftcoreFooter": "Terminé avec {softcore}/{total} succès en mode softcore",
+    "globalNotif100points": "🎉 💯 **{username}** vient de débloquer un succès à **100 points**! 💯 🎉",
 
     "_DESC2_": "GENERATEIMAGE.JS",
     "unlockHeader": "{username} vient de débloquer :",
@@ -33,6 +34,7 @@
     "noUser": "⚠️ Aucun utilisateur enregistré sur ce serveur.",
     "cleanComplete": "✅ Nettoyage effectué : {number} utilisateur(s) retiré(s) du serveur car ils n'y sont plus.",
     "langSuccess": "✅ Langue définie avec succès.",
+    "notifSuccess": "✅ Notifications globales mises sur {value}",
 
     "_DESC6_": "AOTM/AOTW.js",
     "noAotm": "❌ Aucune information sur l’AOTM actuellement.",

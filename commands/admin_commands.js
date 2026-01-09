@@ -42,6 +42,17 @@ export default {
               { name: 'English', value: 'en' }
             )
         )
+    )
+    .addSubcommand(sub =>
+      sub
+        .setName('notifications')
+        .setDescription('Turn on or off the global notifications')
+        .addBooleanOption(option =>
+          option
+            .setName('value')
+            .setDescription('Enable or disable notifications')
+            .setRequired(true)
+        )
     ),
 
   async execute(interaction) {
@@ -61,27 +72,48 @@ export default {
     const usersDB = loadDB('usersdb');
     const subcommand = interaction.options.getSubcommand();
 
-    // === /admin setchannel ===
-    if (subcommand === 'setchannel') {
-      const channelId = interaction.channelId;
+  // === /admin setchannel ===
+  if (subcommand === 'setchannel') {
+    const channelId = interaction.channelId;
+    const channel = interaction.guild.channels.cache.get(channelId);
 
-      if (!guildsDB[guildId]) {
-        guildsDB[guildId] = {
-          channel: channelId,
-          lang: "en",
-          users: []
-        };
-      } else {
-        guildsDB[guildId].channel = channelId;
-      }
-
-      saveDB(guildsDB, 'guildsdb');
-
+    if (!channel) {
       return interaction.reply({
-        content: t(lang, "salonDefiniSuccess"),
+        content: t(lang, "salonIntrouvable"),
         flags: MessageFlags.Ephemeral
       });
     }
+
+    // Vérifier les permissions du bot
+    const botMember = interaction.guild.members.me; // ou guild.me pour v13
+    const permissions = channel.permissionsFor(botMember);
+
+    if (!permissions.has(["ViewChannel", "SendMessages", "AttachFiles"])) {
+      return interaction.reply({
+        content: t(lang, "botPasPermissions", { channel: channel.name }),
+        flags: MessageFlags.Ephemeral
+      });
+    }
+
+    // Mise à jour de la DB
+    if (!guildsDB[guildId]) {
+      guildsDB[guildId] = {
+        channel: channelId,
+        lang: "en",
+        global_notifications: true,
+        users: []
+      };
+    } else {
+      guildsDB[guildId].channel = channelId;
+    }
+
+    saveDB(guildsDB, 'guildsdb');
+
+    return interaction.reply({
+      content: t(lang, "salonDefiniSuccess"),
+      flags: MessageFlags.Ephemeral
+    });
+  }
 
     // === /admin remove ===
     if (subcommand === 'remove') {
@@ -143,6 +175,7 @@ export default {
         guildsDB[guildId] = {
           channel: 0,
           lang: language,
+          global_notifications: true,
           users: []
         };
       } else {
@@ -153,6 +186,30 @@ export default {
 
       return interaction.reply({
         content: t(lang, "langSuccess"),
+        flags: MessageFlags.Ephemeral
+      });
+    }
+
+    // === /admin notifications ===
+    if (subcommand === 'notifications') {
+
+      const value = interaction.options.getBoolean('value');
+
+      if (!guildsDB[guildId]) {
+        guildsDB[guildId] = {
+          channel: null,
+          lang: "en",
+          global_notifications: value,
+          users: []
+        };
+      } else {
+        guildsDB[guildId].global_notifications = value;
+      }
+
+      saveDB(guildsDB, 'guildsdb');
+
+      return interaction.reply({
+        content: t(lang, "notifSuccess", { value : value }),
         flags: MessageFlags.Ephemeral
       });
     }
