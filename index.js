@@ -37,7 +37,7 @@ process.on('unhandledRejection', reason => {
   console.error('❌ Unhandled Rejection:', reason);
 });
 
-const CHECK_INTERVAL_COURT = 10 * 1000; // 3 minutes
+const CHECK_INTERVAL_COURT = 3 * 60 * 1000; // 3 minutes
 const CHECK_INTERVAL_MOYEN = 6 * 60 * 1000; // 6 minutes
 const CHECK_INTERVAL_LONG = 30 * 6 * 1000;  // 30 minutes
 const userCheckState = {}; // { discordId: { lastactivity, nextCheckTime } }
@@ -157,20 +157,27 @@ async function checkOneUser(discordId) {
       achievementsOffset[id] = (achievementsOffset[id] || 0) + 1;
   };
 
+  const gamesWithNewAchievements = new Set(
+    newAchievements.map(ach => String(ach.gameId))
+  );
+  
   var gameProgress = {};
   for (const [gameId, gameAward] of Object.entries(summary.awarded || {})) {
-      gameProgress[gameId] = {
+    if (!gamesWithNewAchievements.has(gameId)) continue;
+  
+    gameProgress[gameId] = {
       achieved: gameAward.numAchieved,
       achievedH: gameAward.numAchievedHardcore,
-      offset: achievementsOffset[gameId]-1,
+      offset: (achievementsOffset[gameId] || 1) - 1,
       total: gameAward.numPossibleAchievements || 1
-    }
-  };
+    };
+  }
 
   var gameConsole = {};
-  for (const [gameId,game] of Object.entries(summary.recentlyPlayed || [])) {
-      gameConsole[game.gameId] = consoleTable[game.consoleName];
-  };
+  for (const game of Object.values(summary.recentlyPlayed || [])) {
+    gameConsole[game.gameId] = consoleTable[game.consoleName];
+  }
+  
 
   // ------ Étape 3 : Préparation notifications succès ------
   const notifications = [];
@@ -279,7 +286,7 @@ async function checkOneUser(discordId) {
 
           case "achievement":
 
-            if (notif.achievementData.points == 25) {
+            if (notif.achievementData.points == 100) {
               const cacheKey = `${notif.achievementData.id}_${lang}`;
               let imageBuffer = achievementImageCache.get(cacheKey);
 

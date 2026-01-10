@@ -200,7 +200,7 @@ export function updateStats_Points(points,hardcore) {
   if (hardcore) {
     statsDB.totalCheevos_h += 1;
     statsDB.totalPoints_h += points;
-    if (points === 0) statsDB.total0_s += 1;
+    if (points === 0) statsDB.total0_h += 1;
     else if (points >= 1 && points <= 4) statsDB.total1_4_h += 1;
     else if (points >= 5 && points <= 9) statsDB.total5_9_h += 1;
     else if (points === 10) statsDB.total10_h += 1;
