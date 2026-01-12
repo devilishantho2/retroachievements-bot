@@ -278,7 +278,7 @@ async function checkOneUser(discordId) {
     const lang = guildData.lang || 'en';
     const channel = await retry(() => client.channels.fetch(guildData.channel.toString()),{ retries: 3, delay: 500 });
 
-    if (!guildData.users.includes(discordId)) {   //Envoie seulement les notifs globales si pas dans le serveur
+    if (!guildData.users.includes(discordId) && guildData.global_notifications) {   //Envoie seulement les notifs globales si pas dans le serveur et notifications activées
 
       for (const notif of notifications) {
 
@@ -310,7 +310,7 @@ async function checkOneUser(discordId) {
       } 
     }            
 
-    else {                                                  //Envoie des notifs normales
+    else if (guildData.users.includes(discordId)) {                                                  //Envoie des notifs normales
       for (const notif of notifications) {
         switch (notif.type) {
   
