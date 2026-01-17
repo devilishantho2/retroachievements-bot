@@ -37,12 +37,12 @@ process.on('unhandledRejection', reason => {
   console.error('❌ Unhandled Rejection:', reason);
 });
 
-const CHECK_INTERVAL_COURT = 3 * 60 * 1000; // 3 minutes
+const CHECK_INTERVAL_COURT = 10 * 1000; // 3 minutes
 const CHECK_INTERVAL_MOYEN = 6 * 60 * 1000; // 6 minutes
 const CHECK_INTERVAL_LONG = 30 * 6 * 1000;  // 30 minutes
 const userCheckState = {}; // { discordId: { lastactivity, nextCheckTime } }
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers] });
+const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 client.commands = new Collection();
 global.clientRef = client;
 
@@ -107,6 +107,17 @@ async function checkOneUser(discordId) {
   const aotw = loadDB('aotwdb');
   const aotm = loadDB('aotmdb');
 
+  const guildsWithUser = [];
+  const guildsWithoutUser = [];
+  
+  for (const [guildId, guildData] of Object.entries(guildsDB)) {  //Crée les listes des guilds ou est/n'est pas l'utilisateur
+    if (guildData.users.includes(discordId)) {
+      guildsWithUser.push(guildId);
+    } else {
+      guildsWithoutUser.push(guildId);
+    }
+  }
+  
   const newAchievements = [];
 
   const authorization = buildAuthorization({
@@ -181,6 +192,7 @@ async function checkOneUser(discordId) {
 
   // ------ Étape 3 : Préparation notifications succès ------
   const notifications = [];
+  const notificationsGlobal = [];
   for (const achievement of newAchievements) {
 
     if (gameProgress[achievement.gameId].total <= 1) continue;
@@ -201,15 +213,17 @@ async function checkOneUser(discordId) {
     }
 
     if (percent > 0) {
-    notifications.push({
-      type: "achievement",
-      achievementData
-    });
 
-    addToHistory(discordId, achievementData);
-    updateStats_Points(achievement.points,achievement.hardcoreAchieved);
+      if (achievementData.points == 100) {
+        notificationsGlobal.push({type: "achievement100",achievementData})
+      };
 
-    log(`✅ ${summary.user} → ${achievement.id} (${percent}% ${achievement.hardcoreAchieved ? 'H' : 'S'} ${getPointsEmoji(achievement.points)})`);
+      notifications.push({type: "achievement",achievementData});
+
+      addToHistory(discordId, achievementData);
+      updateStats_Points(achievement.points,achievement.hardcoreAchieved);
+
+      log(`✅ ${summary.user} → ${achievement.id} (${percent}% ${achievement.hardcoreAchieved ? 'H' : 'S'} ${getPointsEmoji(achievement.points)})`);
     }
   };
   
@@ -219,8 +233,7 @@ async function checkOneUser(discordId) {
     setAotwUnlocked(discordId, true);
     notifications.push({
         type: "aotw",
-        title: aotw.title,
-        boxArt: aotw.game.boxArt
+        title: aotw.title
     });
     log(`🏆 AOTW ${aotw.title} notifié pour ${summary.user}`);
     }
@@ -229,8 +242,7 @@ async function checkOneUser(discordId) {
     setAotmUnlocked(discordId, true);
     notifications.push({
         type: "aotm",
-        title: aotm.title,
-        boxArt: aotm.game.boxArt
+        title: aotm.title
     });
     log(`🏅 AOTM ${aotm.title} notifié pour ${summary.user}`);
     }
@@ -268,120 +280,122 @@ async function checkOneUser(discordId) {
     }
   }
 
-  // ------ Étape 6 : Envoie des notifications ------
+  // ------ Étape 6 : Envoie des notifications normales ------
   const achievementImageCache = new Map();
 
-  for (const [guildId, guildData] of Object.entries(guildsDB)) {
-
+  for (const guildId of guildsWithUser) {
+    const guildData = guildsDB[guildId];
     if (!guildData.channel || guildData.channel === null) continue;    //Skip si channel pas défini
+
+    const lang = guildData.lang || 'en';
+    const channel = await retry(() => client.channels.fetch(guildData.channel.toString()),{ retries: 3, delay: 500 });           
+
+    for (const notif of notifications) {
+      switch (notif.type) {
+
+        case "achievement":
+          const cacheKey = `${notif.achievementData.id}_${lang}`;
+          let imageBuffer = achievementImageCache.get(cacheKey);
+
+          if (!imageBuffer) {
+            var imageData = notif.achievementData;
+            imageData["username"] = summary.user;
+            imageData["backgroundImage"] = user.background;
+            imageData["textColor"] = user.color;
+            imageData["lang"] = lang;
+            imageBuffer = await generateAchievementImage(imageData);
+            achievementImageCache.set(cacheKey, imageBuffer);
+          }
+
+          await channel.send({
+            files: [{ attachment: imageBuffer, name: 'achievement.png' }]
+          });
+
+          break;
+
+        case "aotw":
+          await channel.send({
+            embeds: [{
+              title: t(lang, 'aotwUnlockedTitle'),
+              description: t(lang, 'aotwUnlockedDesc', { username: summary.user, title: notif.title }),
+              color: 0x2ecc71
+            }]
+          });
+          break;
+
+        case "aotm":
+          await channel.send({
+            embeds: [{
+              title: t(lang, 'aotmUnlockedTitle'),
+              description: t(lang, 'aotmUnlockedDesc', { username: summary.user, title: notif.title }),
+              color: 0x3498db
+            }]
+          });
+          break;
+
+        case "masteryHardcore":
+          await channel.send({
+            embeds: [{
+              title: t(lang, 'gameMasteredTitle'),
+              description: t(lang, 'gameMasteredDesc', { username: summary.user, gameTitle: notif.gameTitle, consoleName: notif.consoleName }),
+              color: 0xf1c40f,
+              footer: { text: t(lang, 'gameMasteredFooter', { hardcore: notif.hardcore, total: notif.total }) },
+              timestamp: new Date(),
+              image: notif.boxArt ? { url: `https://retroachievements.org${notif.boxArt}` } : undefined,
+            }]
+          });
+          break;
+
+        case "masterySoftcore":
+          await channel.send({
+            embeds: [{
+              title: t(lang, 'gameMasteredSoftcoreTitle'),
+              description: t(lang, 'gameMasteredSoftcoreDesc', { username: summary.user, gameTitle: notif.gameTitle, consoleName: notif.consoleName }),
+              color: 0x8400ff,
+              footer: { text: t(lang, 'gameMasteredSoftcoreFooter', { softcore: notif.softcore, total: notif.total }) },
+              timestamp: new Date(),
+              image: notif.boxArt ? { url: `https://retroachievements.org${notif.boxArt}` } : undefined,
+            }]
+          });
+          break;
+      }
+    }
+  }
+
+  // ------ Étape 6 : Envoie des notifications globales ------
+  if (notificationsGlobal.length === 0) return;
+  for (const guildId of guildsWithoutUser) {
+    const guildData = guildsDB[guildId];
+    if (notificationsGlobal.length === 0) continue;
+    if (!guildData.channel || guildData.channel === null) continue;     //Skip si channel pas défini
+    if (!guildData.global_notifications) continue;                      //Skip si guild a les notifs globales désactivées
 
     const lang = guildData.lang || 'en';
     const channel = await retry(() => client.channels.fetch(guildData.channel.toString()),{ retries: 3, delay: 500 });
 
-    if (!guildData.users.includes(discordId) && guildData.global_notifications) {   //Envoie seulement les notifs globales si pas dans le serveur et notifications activées
+    for (const notif of notificationsGlobal) {
+      switch (notif.type) {
 
-      for (const notif of notifications) {
+        case "achievement100":
+          const cacheKey = `${notif.achievementData.id}_${lang}`;
+          let imageBuffer = achievementImageCache.get(cacheKey);
 
-        switch (notif.type) {
+          if (!imageBuffer) {
+            var imageData = notif.achievementData;
+            imageData["username"] = summary.user;
+            imageData["backgroundImage"] = user.background;
+            imageData["textColor"] = user.color;
+            imageData["lang"] = lang;
+            imageBuffer = await generateAchievementImage(imageData);
+            achievementImageCache.set(cacheKey, imageBuffer);
+          }
 
-          case "achievement":
+          await channel.send({
+            content: t(lang, "globalNotif100points", {username : summary.user}),
+            files: [{ attachment: imageBuffer, name: 'achievement.png' }]
+          });
 
-            if (notif.achievementData.points == 100) {
-              const cacheKey = `${notif.achievementData.id}_${lang}`;
-              let imageBuffer = achievementImageCache.get(cacheKey);
-
-              if (!imageBuffer) {
-                var imageData = notif.achievementData;
-                imageData["username"] = summary.user;
-                imageData["backgroundImage"] = user.background;
-                imageData["textColor"] = user.color;
-                imageData["lang"] = lang;
-                imageBuffer = await generateAchievementImage(imageData);
-                achievementImageCache.set(cacheKey, imageBuffer);
-              }
-
-              await channel.send({
-                content: t(lang, "globalNotif100points", {username : summary.user}),
-                files: [{ attachment: imageBuffer, name: 'achievement.png' }]
-              });
-
-            }
-        }
-      } 
-    }            
-
-    else if (guildData.users.includes(discordId)) {                                                  //Envoie des notifs normales
-      for (const notif of notifications) {
-        switch (notif.type) {
-  
-          case "achievement":
-            const cacheKey = `${notif.achievementData.id}_${lang}`;
-            let imageBuffer = achievementImageCache.get(cacheKey);
-  
-            if (!imageBuffer) {
-              var imageData = notif.achievementData;
-              imageData["username"] = summary.user;
-              imageData["backgroundImage"] = user.background;
-              imageData["textColor"] = user.color;
-              imageData["lang"] = lang;
-              imageBuffer = await generateAchievementImage(imageData);
-              achievementImageCache.set(cacheKey, imageBuffer);
-            }
-  
-            await channel.send({
-              files: [{ attachment: imageBuffer, name: 'achievement.png' }]
-            });
-  
-            break;
-  
-          case "aotw":
-            await channel.send({
-              embeds: [{
-                title: t(lang, 'aotwUnlockedTitle'),
-                description: t(lang, 'aotwUnlockedDesc', { username: summary.user, title: notif.title }),
-                color: 0x2ecc71,
-                thumbnail: { url: `https://media.retroachievements.org${notif.boxArt}` },
-              }]
-            });
-            break;
-  
-          case "aotm":
-            await channel.send({
-              embeds: [{
-                title: t(lang, 'aotmUnlockedTitle'),
-                description: t(lang, 'aotmUnlockedDesc', { username: summary.user, title: notif.title }),
-                color: 0x3498db,
-                thumbnail: { url: `https://media.retroachievements.org${notif.boxArt}` },
-              }]
-            });
-            break;
-  
-          case "masteryHardcore":
-            await channel.send({
-              embeds: [{
-                title: t(lang, 'gameMasteredTitle'),
-                description: t(lang, 'gameMasteredDesc', { username: summary.user, gameTitle: notif.gameTitle, consoleName: notif.consoleName }),
-                color: 0xf1c40f,
-                footer: { text: t(lang, 'gameMasteredFooter', { hardcore: notif.hardcore, total: notif.total }) },
-                timestamp: new Date(),
-                image: notif.boxArt ? { url: `https://retroachievements.org${notif.boxArt}` } : undefined,
-              }]
-            });
-            break;
-  
-          case "masterySoftcore":
-            await channel.send({
-              embeds: [{
-                title: t(lang, 'gameMasteredSoftcoreTitle'),
-                description: t(lang, 'gameMasteredSoftcoreDesc', { username: summary.user, gameTitle: notif.gameTitle, consoleName: notif.consoleName }),
-                color: 0x8400ff,
-                footer: { text: t(lang, 'gameMasteredSoftcoreFooter', { softcore: notif.softcore, total: notif.total }) },
-                timestamp: new Date(),
-                image: notif.boxArt ? { url: `https://retroachievements.org${notif.boxArt}` } : undefined,
-              }]
-            });
-            break;
-        }
+          break;
       }
     }
   }
@@ -402,7 +416,7 @@ client.once('ready', async () => {
 
     for (const [discordId, user] of Object.entries(usersDB)) {
       if (!userCheckState[discordId]) {
-        // premier passage → répartir un peu au hasard dans les 3min
+        // premier passage → répartir un peu au hasard dans les 6min
         userCheckState[discordId] = {
           lastActivity: 0,
           nextCheckTime: now + Math.floor(Math.random() * CHECK_INTERVAL_COURT)
@@ -427,7 +441,7 @@ client.once('ready', async () => {
         if (now - userCheckState[discordId].lastActivity > 48*60*60*1000) {       //Déco depuis 48h -> Replanifie dans 30min
           userCheckState[discordId].nextCheckTime = now + CHECK_INTERVAL_LONG;
         }
-        else if (now - userCheckState[discordId].lastActivity > 10*60*1000) {      //Déco depuis 5min -> Replanifie dans 10min
+        else if (now - userCheckState[discordId].lastActivity > 10*60*1000) {      //Déco depuis 10min -> Replanifie dans 6min
           userCheckState[discordId].nextCheckTime = now + CHECK_INTERVAL_MOYEN;
         }
         else {                                                                    //Déco depuis moins de 5min (ou entrain de jouer) -> Replanifie dans 3min
@@ -472,34 +486,6 @@ client.on('guildCreate', guild => {
     saveDB(guildsDB, 'guildsdb');
     log(`➕ Ajouté au serveur : ${guild.name} (${guild.id})`);
   }
-});
-
-// Quand un membre quitte un serveur
-client.on('guildMemberRemove', member => {
-  const guildId = member.guild.id;
-  const userId = member.user.id;
-
-  const guildsDB = loadDB('guildsdb');
-  const guildData = guildsDB[guildId];
-
-  if (!guildData || !Array.isArray(guildData.users)) return;
-  guildData.users = guildData.users.filter(id => id !== userId);
-
-  console.log(`👋 ${member.user.tag} a quitté ${member.guild.name}`);
-
-  const userStillInAnyGuild = Object.values(guildsDB).some(guild =>
-    Array.isArray(guild.users) && guild.users.includes(userId)
-  );
-
-  if (!userStillInAnyGuild) {
-    const usersDB = loadDB('usersdb');
-    delete usersDB[userId];
-    saveDB(usersDB, 'usersdb');
-
-    console.log(`👋 ${member.user.tag} n'est plus dans aucun serveur`);
-  }
-
-  saveDB(guildsDB, 'guildsdb');
 });
 
 client.login(process.env.DISCORD_TOKEN);
