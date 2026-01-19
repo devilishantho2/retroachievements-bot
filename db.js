@@ -8,7 +8,8 @@ const DB = {
   "aotwdb": "./data/aotw.json",
   "aotmdb": "./data/aotm.json",
   "apidb": "./data/api.json",
-  "statsdb": "./data/stats.json"
+  "statsdb": "./data/stats.json",
+  "bandb": "./data/blacklist.json"
 };
 
 // --- Fonctions existantes, à garder intactes ---

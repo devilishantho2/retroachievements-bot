@@ -37,7 +37,7 @@ process.on('unhandledRejection', reason => {
   console.error('❌ Unhandled Rejection:', reason);
 });
 
-const CHECK_INTERVAL_COURT = 3* 60 * 1000; // 3 minutes
+const CHECK_INTERVAL_COURT = 10 * 1000; // 3 minutes
 const CHECK_INTERVAL_MOYEN = 6 * 60 * 1000; // 6 minutes
 const CHECK_INTERVAL_LONG = 30 * 6 * 1000;  // 30 minutes
 const userCheckState = {}; // { discordId: { lastactivity, nextCheckTime } }
@@ -101,6 +101,8 @@ async function fetchAndStoreAotw() {
 }
 
 async function checkOneUser(discordId) {
+
+  const blacklist = loadDB('bandb')
 
   const user = loadDB('usersdb')[discordId];
   const guildsDB = loadDB('guildsdb');
@@ -279,6 +281,8 @@ async function checkOneUser(discordId) {
     log(`🏅 ${summary.user} a terminé ${gameInfo?.title}`);
     }
   }
+
+  if (blacklist.includes(discordId)) return;
 
   // ------ Étape 6 : Envoie des notifications normales ------
   const achievementImageCache = new Map();
