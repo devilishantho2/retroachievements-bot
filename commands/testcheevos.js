@@ -40,7 +40,7 @@ export default {
       username: 'Username',
       description: 'Defeat the current champion and become the Pokémon League Champion',
       gameTitle: 'Pokémon Emerald Version',
-      badgeUrl: '/Badge/315508.png',
+      badgeUrl: '/315508.png',
       progressPercent: 50,
       backgroundImage: user.background,
       textColor: user.color,

@@ -208,7 +208,7 @@ async function checkOneUser(discordId) {
       points: achievement.points,
       description: achievement.description,
       gameTitle: achievement.gameTitle,
-      badgeUrl: `/Badge/${achievement.badgeName}.png`,
+      badgeUrl: `/${achievement.badgeName}.png`,
       progressPercent: percent,
       hardcore: achievement.hardcoreAchieved,
       consoleicon: gameConsole[achievement.gameId]
@@ -265,7 +265,7 @@ async function checkOneUser(discordId) {
         boxArt: gameInfo?.imageBoxArt,
         total, hardcore
     });
-    changeLatestMaster(discordId,[gameInfo?.imageIcon, true]);
+    changeLatestMaster(discordId,[gameInfo?.imageIcon?.replace('/Images', ''), true]);
     updateStats_Master("mastery");
     log(`🏅 ${summary.user} a masterisé ${gameInfo?.title}`);
     } else if (gameProgress[gameId].total > 0 && gameProgress[gameId].achieved === gameProgress[gameId].total) {
@@ -276,7 +276,7 @@ async function checkOneUser(discordId) {
         boxArt: gameInfo?.imageBoxArt,
         total, softcore
     });
-    changeLatestMaster(discordId,[gameInfo?.imageIcon, false]);
+    changeLatestMaster(discordId,[gameInfo?.imageIcon?.replace('/Images', ''), false]);
     updateStats_Master("completion");
     log(`🏅 ${summary.user} a terminé ${gameInfo?.title}`);
     }

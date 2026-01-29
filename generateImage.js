@@ -172,7 +172,7 @@ export async function generateAchievementImage({
   // 🎖️ Badge + barre de progression
   try {
     if (badgeUrl) {
-      const badgeImage = await loadImage(`https://media.retroachievements.org${badgeUrl}`);
+      const badgeImage = await loadImage(`https://media.retroachievements.org/Badge${badgeUrl}`);
       const badgeSize = 128;
       const badgeX = width - badgeSize - 20;
       const badgeY = height / 2 - badgeSize / 2;

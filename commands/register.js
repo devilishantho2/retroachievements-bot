@@ -77,7 +77,7 @@ export default {
       if (awards.masteryAwardsCount > 0 || awards.completionAwardsCount > 0) {
         for (const award of awards.visibleUserAwards) {
           if (award.awardType == "Mastery/Completion") {
-            latestMaster = [award.imageIcon, award.awardDataExtra == 1];
+            latestMaster = [award.imageIcon.replace('/Images', ''), award.awardDataExtra == 1];
             continue
           }
         }
@@ -97,7 +97,7 @@ export default {
           points: achievement.points,
           description: achievement.description,
           gameTitle: achievement.gameTitle,
-          badgeUrl: `/Badge/${achievement.badgeName}.png`,
+          badgeUrl: `/${achievement.badgeName}.png`,
           progressPercent: percent,
           hardcore: achievement.hardcoreAchieved,
           consoleicon: gameConsole[achievement.gameId]

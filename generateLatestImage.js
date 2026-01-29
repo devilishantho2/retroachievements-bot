@@ -121,7 +121,7 @@ export async function generateLatestImage(discordId, lang = 'en', username) {
   if (latestMaster) {
     const [imagePath, hardcore] = latestMaster;
     try {
-      const latestImg = await loadImage(`https://media.retroachievements.org${imagePath}`);
+      const latestImg = await loadImage(`https://media.retroachievements.org/Images${imagePath}`);
       ctx.shadowColor = 'black';
       ctx.shadowOffsetX = 2;
       ctx.shadowOffsetY = 2;
@@ -162,7 +162,7 @@ export async function generateLatestImage(discordId, lang = 'en', username) {
       const badgePath = history[i].badgeUrl;
       const hardcore = history[i].hardcore;
       try {
-        const badgeImg = await loadImage(`https://media.retroachievements.org${badgePath}`);
+        const badgeImg = await loadImage(`https://media.retroachievements.org/Badge${badgePath}`);
         ctx.shadowColor = 'black';
         ctx.shadowOffsetX = 2;
         ctx.shadowOffsetY = 2;

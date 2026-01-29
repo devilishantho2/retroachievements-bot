@@ -1,5 +1,5 @@
 import { SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder, EmbedBuilder, MessageFlags, Formatters } from 'discord.js';
-import { changeLatestMaster, loadDB } from '../db.js';
+import { loadDB } from '../db.js';
 import { t } from '../locales.js';
 
 const BOT_VERSION = '1.2.7';
@@ -133,6 +133,11 @@ const commandsInfo = {
       description: 'Affiche les derniers succès d\'un utilisateur',
       usage: '/latestcheevos <username>',
       details: 'Cette commande affiche les derniers succès d\'un utilisateur, ou les derniers succès de l\'utilisateur si aucun pseudo est donné.'
+    },
+    en: {
+      description: 'Displays a user’s latest achievements',
+      usage: '/latestcheevos <username>',
+      details: 'This command displays a user’s latest achievements, or your own latest achievements if no username is provided.'
     }
   }
 };
