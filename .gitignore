@@ -4,3 +4,4 @@
 .envcopy
 .env2
 .json
+package-lock.json
