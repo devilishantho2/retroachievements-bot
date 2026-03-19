@@ -37,8 +37,8 @@ process.on('unhandledRejection', reason => {
   console.error('❌ Unhandled Rejection:', reason);
 });
 
-const CHECK_INTERVAL_COURT = 10 * 1000; // 3 minutes
-const CHECK_INTERVAL_MOYEN = 6 * 60 * 1000; // 6 minutes
+const CHECK_INTERVAL_COURT = 5 * 10 * 1000; // 3 minutes
+const CHECK_INTERVAL_MOYEN = 10 * 60 * 1000; // 6 minutes
 const CHECK_INTERVAL_LONG = 30 * 6 * 1000;  // 30 minutes
 const userCheckState = {}; // { discordId: { lastactivity, nextCheckTime } }
 

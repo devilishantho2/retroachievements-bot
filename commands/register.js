@@ -2,7 +2,7 @@ import { SlashCommandBuilder, MessageFlags } from 'discord.js';
 import { addUser, loadDB, saveDB } from '../db.js';
 import { t } from '../locales.js';
 import { buildAuthorization, getUserSummary, getUserAwards, getUserCompletedGames } from "@retroachievements/api";
-import { log } from '../utils.js';
+import { log, retry } from '../utils.js';
 import { consoleTable } from '../consoleTable.js';
 
 export default {
@@ -43,8 +43,8 @@ export default {
       });
 
       // Essaye de récupérer le profil
-      const summary = await getUserSummary(authorization, { username: username, recentGamesCount: 3});
-      const awards = await getUserAwards(authorization, { username: username });
+      const summary = await retry(()=>getUserSummary(authorization, { username: username, recentGamesCount: 3}));
+      const awards = await retry(()=>getUserAwards(authorization, { username: username }));
 
       const recentAchievements = Object.values(summary.recentAchievements)
       .flatMap(game => Object.values(game))
