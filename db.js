@@ -136,6 +136,12 @@ export async function setUserBackground(discordId, url) {
 
   // Conversion et enregistrement en PNG
   await sharp(buffer)
+    .resize({
+      width: 800,
+      height: 250,
+      fit: 'inside',
+      withoutEnlargement: true
+    })
     .png()
     .toFile(filepath);
 
