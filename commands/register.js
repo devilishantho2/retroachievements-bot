@@ -1,9 +1,9 @@
 import { SlashCommandBuilder, MessageFlags } from 'discord.js';
-import { addUser, loadDB, saveDB } from '../db.js';
 import { t } from '../locales.js';
 import { buildAuthorization, getUserSummary, getUserAwards, getUserCompletedGames } from "@retroachievements/api";
 import { log, retry } from '../utils.js';
 import { consoleTable } from '../consoleTable.js';
+import { guildLang, addUser, isGuildSetup, addUserToGuild, isUserInGuild } from '../db_v2.js';
 
 export default {
   data: new SlashCommandBuilder()
@@ -19,38 +19,34 @@ export default {
         .setRequired(true)),
 
   async execute(interaction) {
+    const discordId = interaction.user.id;
     const guildId = interaction.guildId;
-    const guildsDB = loadDB('guildsdb');
-    const lang = guildsDB[guildId]?.lang || 'en';
+    const username = interaction.options.getString('username');
+    const raApiKey = interaction.options.getString('apikey');
+    const lang = guildLang(guildId)
 
+    //Arrete tout si commande en MP
     if (!guildId) {
-      await interaction.reply({
-        content: t(lang, "notInDM"),
-        flags: MessageFlags.Ephemeral,
-      });
+      await interaction.reply({content: t(lang, "notInDM"), flags: MessageFlags.Ephemeral});
       return;
     }
 
-    const discordId = interaction.user.id;
-    const username = interaction.options.getString('username');
-    const raApiKey = interaction.options.getString('apikey');
+    // Arrete tout si serveur non setup
+    if (!isGuildSetup(guildId)) {
+      await interaction.reply({content: t(lang, "guildNotSetup"), flags: MessageFlags.Ephemeral});
+      return;
+    }
 
-    // ✅ Vérification API RetroAchievements
+    // Vérification API RetroAchievements
     try {
-      const authorization = buildAuthorization({
-        username: username,
-        webApiKey: raApiKey
-      });
-
-      // Essaye de récupérer le profil
+      const authorization = buildAuthorization({username: username, webApiKey: raApiKey});
       const summary = await retry(()=>getUserSummary(authorization, { username: username, recentGamesCount: 3}));
       const awards = await retry(()=>getUserAwards(authorization, { username: username }));
 
       const recentAchievements = Object.values(summary.recentAchievements)
       .flatMap(game => Object.values(game))
-      .sort((a, b) => new Date(b.dateAwarded) - new Date(a.dateAwarded));
-
-      recentAchievements.reverse()
+      .sort((a, b) => new Date(a.dateAwarded) - new Date(b.dateAwarded));
+      const lastAchievement = [recentAchievements[recentAchievements.length - 1].id,recentAchievements[recentAchievements.length - 1].dateAwarded];
 
       const achievementsOffset = {};
       for (const ach of recentAchievements) {
@@ -58,7 +54,7 @@ export default {
           achievementsOffset[id] = (achievementsOffset[id] || 0) + 1;
       }
     
-      var gameProgress = {};
+      const gameProgress = {};
       for (const [gameId, gameAward] of Object.entries(summary.awarded || {})) {
           gameProgress[gameId] = {
           achieved: gameAward.numAchieved,
@@ -68,7 +64,7 @@ export default {
         };
       }
     
-      var gameConsole = {};
+      const gameConsole = {};
       for (const [gameId,game] of Object.entries(summary.recentlyPlayed || [])) {
           gameConsole[game.gameId] = consoleTable[game.consoleName];
       };
@@ -77,13 +73,13 @@ export default {
       if (awards.masteryAwardsCount > 0 || awards.completionAwardsCount > 0) {
         for (const award of awards.visibleUserAwards) {
           if (award.awardType == "Mastery/Completion") {
-            latestMaster = [award.imageIcon.replace('/Images', ''), award.awardDataExtra == 1];
+            latestMaster = [award.imageIcon.replace('/Images/', ''), award.awardDataExtra];
             continue
           }
         }
       }
 
-      var history = [];
+      const history = [];
       for (const achievement of recentAchievements) {
 
         if (gameProgress[achievement.gameId].total <= 1) continue;
@@ -106,32 +102,19 @@ export default {
       }
 
       // Si OK → on sauvegarde
-      addUser(discordId, guildId, {
-        ulid : summary.ulid,
-        raApiKey,
-        background: "data/backgrounds/default_background.png",
-        color: "#ffffff",
-        lastAchievement: [recentAchievements[recentAchievements.length - 1].id,recentAchievements[recentAchievements.length - 1].dateAwarded] || null,
-        aotwUnlocked: false,
-        aotmUnlocked: false,
-        latestMaster : latestMaster,
-        history : history
-      });
-
+      addUser(discordId, summary.ulid, raApiKey, lastAchievement[0], lastAchievement[1], latestMaster[0], latestMaster[1], history);
+      if (!isUserInGuild(guildId,discordId)) {
+        addUserToGuild(guildId, discordId);
+      }
+    
       log(`🕹️ ${summary.user} vient de s'enregistrer`);
 
-      await interaction.reply({
-        content: t(lang, "registerSuccess", { username: summary.user }),
-        flags: MessageFlags.Ephemeral,
-      });
+      await interaction.reply({content: t(lang, "registerSuccess", { username: summary.user }), flags: MessageFlags.Ephemeral});
 
-    } catch (err) {
+    }
+    catch (err) {
       console.error("❌ Erreur RA API :", err);
-
-      await interaction.reply({
-        content: t(lang, "registerError"),
-        flags: MessageFlags.Ephemeral,
-      });
+      await interaction.reply({content: t(lang, "registerError"), flags: MessageFlags.Ephemeral});
     }
   }
 };

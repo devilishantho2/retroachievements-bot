@@ -1,10 +1,8 @@
 import fs from 'fs';
-import path from 'path';
 import sharp from "sharp";
 
 const DB = {
   "usersdb": "./data/users.json",
-  "guildsdb": "./data/guilds.json",
   "aotwdb": "./data/aotw.json",
   "aotmdb": "./data/aotm.json",
   "apidb": "./data/api.json",
@@ -20,141 +18,6 @@ export function loadDB(db_name) {
 
 export function saveDB(db, db_name) {
   fs.writeFileSync(DB[db_name], JSON.stringify(db, null, 2));
-}
-
-// Ajouter ou mettre à jour un user
-export function addUser(discordId, guildId, data) {
-  // Chargement des DB
-  const usersDB = loadDB('usersdb');
-  const guildsDB = loadDB('guildsdb');
-
-  // Ajout ou mise à jour dans users.json
-  if (!usersDB[discordId]) {
-    usersDB[discordId] = data;
-  } else {
-    // On met à jour les champs sensibles
-    usersDB[discordId].raApiKey   = data.raApiKey;
-  }
-  saveDB(usersDB, 'usersdb');
-
-  // Gestion guilds.json
-  if (!guildsDB[guildId]) {
-    guildsDB[guildId] = {
-      channel: null,
-      lang: "en",
-      global_notifications: true,
-      users: []
-    };
-  }
-
-  if (!guildsDB[guildId].users.includes(discordId)) {
-    guildsDB[guildId].users.push(discordId);
-    saveDB(guildsDB, 'guildsdb');
-  }
-}
-
-// Exemple : mise à jour lastAchievement
-export function setLastAchievement(discordId, achievementData) {
-  const usersDB = loadDB('usersdb');
-  const user = usersDB[discordId];
-  if (user) {
-    user.lastAchievement = achievementData;
-    saveDB(usersDB, 'usersdb');
-  }
-}
-
-// --- Fonctions existantes pour la couleur utilisateur (exemple) ---
-export function setUserColor(discordId, color) {
-  const usersDB = loadDB('usersdb');
-  const user = usersDB[discordId];
-  if (user) {
-    user.color = color;
-    saveDB(usersDB, 'usersdb');
-  }
-}
-
-export function getUserColor(discordId) {
-  const usersDB = loadDB('usersdb');
-  const user = usersDB[discordId];
-  return user?.color ?? null;
-}
-
-// --- Fonctions AOTW ---
-export function setAotwUnlocked(discordId, value = true) {
-  const usersDB = loadDB('usersdb');
-  const user = usersDB[discordId];
-  if (user) {
-    user.aotwUnlocked = value;
-    saveDB(usersDB, 'usersdb');
-  }
-}
-
-export function resetAotwUnlocked() {
-  const usersDB = loadDB('usersdb');
-  for (const discordId in usersDB) {
-    if (Object.hasOwn(usersDB, discordId)) {
-      usersDB[discordId].aotwUnlocked = false;
-    }
-  }
-  saveDB(usersDB, 'usersdb');
-}
-
-// --- Fonctions AOTM (à ajouter) ---
-export function setAotmUnlocked(discordId, value = true) {
-  const usersDB = loadDB('usersdb');
-  const user = usersDB[discordId];
-  if (user) {
-    user.aotmUnlocked = value;
-    saveDB(usersDB, 'usersdb');
-  }
-}
-
-export function resetAotmUnlocked() {
-  const usersDB = loadDB('usersdb');
-  for (const discordId in usersDB) {
-    if (Object.hasOwn(usersDB, discordId)) {
-      usersDB[discordId].aotmUnlocked = false;
-    }
-  }
-  saveDB(usersDB, 'usersdb');
-}
-
-export async function setUserBackground(discordId, url) {
-  const usersDB = loadDB("usersdb");
-  const user = usersDB[discordId];
-
-  // Télécharge l’image
-  const res = await fetch(url);
-  if (!res.ok) {
-    throw new Error(`Échec du téléchargement de l'image: ${res.statusText}`);
-  }
-
-  // Lis le contenu brut
-  const buffer = Buffer.from(await res.arrayBuffer());
-
-  const filepath = `data/backgrounds/background_${discordId}.png`;
-
-  // Conversion et enregistrement en PNG
-  await sharp(buffer)
-    .resize({
-      width: 800,
-      height: 250,
-      fit: 'inside',
-      withoutEnlargement: true
-    })
-    .png()
-    .toFile(filepath);
-
-  // Sauvegarde dans la DB
-  user.background = filepath;
-  usersDB[discordId] = user;
-  saveDB(usersDB, "usersdb");
-}
-
-export function getUserBackground(discordId) {
-  const usersDB = loadDB('usersdb');
-  const user = usersDB[discordId];
-  return user?.background ?? 0;
 }
 
 export function incrementApiCallCount() {
@@ -180,26 +43,6 @@ export function incrementImagesGenerated(size) {
   data.images += 1;
   data.imagessize += size;
   saveDB(data, 'statsdb');
-}
-
-export function addToHistory(discordId, cheevosdata) {
-  const usersDB = loadDB('usersdb');
-  const history = usersDB[discordId].history;
-
-  //Si déja 10 succès récents
-  if (history.length === 10) {
-    history.splice(0,1);
-  };
-
-  history.push(cheevosdata);
-  usersDB[discordId].history = history;
-  saveDB(usersDB, 'usersdb');
-}
-
-export function changeLatestMaster(discordId,master) {
-  const usersDB = loadDB('usersdb');
-  usersDB[discordId].latestMaster = master;
-  saveDB(usersDB, 'usersdb');
 }
 
 export function updateStats_Points(points,hardcore) {

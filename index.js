@@ -6,26 +6,16 @@ import cron from 'node-cron';
 import {
   loadDB,
   saveDB,
-  setLastAchievement,
-  setAotwUnlocked,
-  resetAotwUnlocked,
-  setAotmUnlocked,
-  resetAotmUnlocked,
   incrementApiCallCount,
-  addToHistory,
-  changeLatestMaster,
   updateStats_Points,
   updateStats_Master
 } from './db.js';
-import {
-  buildAuthorization,
-  getUserSummary,
-  getAchievementOfTheWeek,
-} from '@retroachievements/api';
+import { buildAuthorization, getUserSummary, getAchievementOfTheWeek } from '@retroachievements/api';
 import { generateAchievementImage } from './generateImage.js';
 import { t } from './locales.js';
 import { consoleTable } from './consoleTable.js';
 import { retry, log, getPointsEmoji } from './utils.js';
+import { addToUserHistory, getAllUsers, getGuildCount, getGuildData, getGuildsWithoutUser, getGuildsWithUser, getUserCount, getUserData, setUserLastAchievement, setUserLastMaster, resetAotmUnlocked, resetAotwUnlocked, setUserAotw, setUserAotm } from './db_v2.js'
 
 config();
 
@@ -37,9 +27,9 @@ process.on('unhandledRejection', reason => {
   console.error('❌ Unhandled Rejection:', reason);
 });
 
-const CHECK_INTERVAL_COURT = 5 * 10 * 1000; // 3 minutes
-const CHECK_INTERVAL_MOYEN = 10 * 60 * 1000; // 6 minutes
-const CHECK_INTERVAL_LONG = 30 * 6 * 1000;  // 30 minutes
+const CHECK_INTERVAL_COURT = 10 * 1000; // 3 minutes
+const CHECK_INTERVAL_MOYEN = 10 * 1000; // 6 minutes
+const CHECK_INTERVAL_LONG = 10 * 1000;  // 30 minutes
 const userCheckState = {}; // { discordId: { lastactivity, nextCheckTime } }
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
@@ -66,10 +56,8 @@ client.on('interactionCreate', async interaction => {
 });
 
 function updatePresence(client) {
-  const usersDB = loadDB('usersdb');
-  const userCount = Object.keys(usersDB).length;
-  const guildsDB = loadDB('guildsdb');
-  const guildCount = Object.keys(guildsDB).length;
+  const userCount = getUserCount();
+  const guildCount = getGuildCount();
 
   client.user.setActivity(`the cheevos of ${userCount} gamer${userCount > 1 ? 's' : ''}, in ${guildCount} server${guildCount > 1 ? 's' : ''}`, {
     type: ActivityType.Watching
@@ -104,28 +92,20 @@ async function checkOneUser(discordId) {
 
   const blacklist = loadDB('bandb')
 
-  const user = loadDB('usersdb')[discordId];
-  const guildsDB = loadDB('guildsdb');
+  const user = getUserData(discordId);
   const aotw = loadDB('aotwdb');
   const aotm = loadDB('aotmdb');
 
-  const guildsWithUser = [];
-  const guildsWithoutUser = [];
-  
-  for (const [guildId, guildData] of Object.entries(guildsDB)) {  //Crée les listes des guilds ou est/n'est pas l'utilisateur
-    if (guildData.users.includes(discordId)) {
-      guildsWithUser.push(guildId);
-    } else {
-      guildsWithoutUser.push(guildId);
-    }
-  }
+  const guildsWithUser = getGuildsWithUser(discordId);
+  const guildsWithoutUser = getGuildsWithoutUser(discordId);
   
   const newAchievements = [];
 
   const authorization = buildAuthorization({
       username: user.ulid,
-      webApiKey: user.raApiKey
+      webApiKey: user.ra_api_key
   });
+
 
   // ------ Étape 1 : collecte ------
   let summary;
@@ -137,6 +117,7 @@ async function checkOneUser(discordId) {
   const lastActivityStr = summary.recentlyPlayed[0].lastPlayed;
   userCheckState[discordId].lastActivity = new Date(lastActivityStr.replace(' ', 'T')).getTime() + 60*60*1000;
 
+
   // ------ Étape 2 : traitement ------
   const recentAchievements = Object.values(summary.recentAchievements)
     .flatMap(game => Object.values(game))
@@ -144,8 +125,8 @@ async function checkOneUser(discordId) {
 
   if (recentAchievements.length === 0) return;
 
-  const lastAchievementDate = new Date(user.lastAchievement[1]);
-  const lastAchievementId = user.lastAchievement[0];
+  const lastAchievementDate = new Date(user.last_achievement_time);
+  const lastAchievementId = user.last_achievement_id;
 
   for (const achievement of recentAchievements) {
     const achievementDate = new Date(achievement.dateAwarded);
@@ -162,7 +143,7 @@ async function checkOneUser(discordId) {
   newAchievements.reverse();
 
   const lastNew = newAchievements[newAchievements.length - 1];
-  setLastAchievement(discordId, [lastNew.id, lastNew.dateAwarded]);
+  setUserLastAchievement(discordId, lastNew.id, lastNew.dateAwarded);
 
   const achievementsOffset = {};
   for (const ach of newAchievements) {
@@ -177,7 +158,7 @@ async function checkOneUser(discordId) {
   var gameProgress = {};
   for (const [gameId, gameAward] of Object.entries(summary.awarded || {})) {
     if (!gamesWithNewAchievements.has(gameId)) continue;
-  
+
     gameProgress[gameId] = {
       achieved: gameAward.numAchieved,
       achievedH: gameAward.numAchievedHardcore,
@@ -222,7 +203,7 @@ async function checkOneUser(discordId) {
 
       notifications.push({type: "achievement",achievementData});
 
-      addToHistory(discordId, achievementData);
+      addToUserHistory(discordId, achievementData);
       updateStats_Points(achievement.points,achievement.hardcoreAchieved);
 
       log(`✅ ${summary.user} → ${achievement.id} (${percent}% ${achievement.hardcoreAchieved ? 'H' : 'S'} ${getPointsEmoji(achievement.points)})`);
@@ -231,8 +212,8 @@ async function checkOneUser(discordId) {
   
   // ------ Étape 4 : Préparation notifications aotw/aotm ------
   for (const achievement of newAchievements) {
-    if (aotw?.id && parseInt(achievement.id) === aotw.id && !user.aotwUnlocked) {
-    setAotwUnlocked(discordId, true);
+    if (aotw?.id && parseInt(achievement.id) === aotw.id && !user.aotw_unlocked) {
+    setUserAotw(discordId, 1);
     notifications.push({
         type: "aotw",
         title: aotw.title
@@ -240,8 +221,8 @@ async function checkOneUser(discordId) {
     log(`🏆 AOTW ${aotw.title} notifié pour ${summary.user}`);
     }
 
-    if (aotm?.id && parseInt(achievement.id) === aotm.id && !user.aotmUnlocked) {
-    setAotmUnlocked(discordId, true);
+    if (aotm?.id && parseInt(achievement.id) === aotm.id && !user.aotm_unlocked) {
+    setUserAotm(discordId, 1);
     notifications.push({
         type: "aotm",
         title: aotm.title
@@ -265,7 +246,7 @@ async function checkOneUser(discordId) {
         boxArt: gameInfo?.imageBoxArt,
         total, hardcore
     });
-    changeLatestMaster(discordId,[gameInfo?.imageIcon?.replace('/Images', ''), true]);
+    setUserLastMaster(discordId,gameInfo?.imageIcon?.replace('/Images/', ''), 1);
     updateStats_Master("mastery");
     log(`🏅 ${summary.user} a masterisé ${gameInfo?.title}`);
     } else if (gameProgress[gameId].total > 0 && gameProgress[gameId].achieved === gameProgress[gameId].total) {
@@ -276,7 +257,7 @@ async function checkOneUser(discordId) {
         boxArt: gameInfo?.imageBoxArt,
         total, softcore
     });
-    changeLatestMaster(discordId,[gameInfo?.imageIcon?.replace('/Images', ''), false]);
+    setUserLastMaster(discordId,gameInfo?.imageIcon?.replace('/Images/', ''), 0);
     updateStats_Master("completion");
     log(`🏅 ${summary.user} a terminé ${gameInfo?.title}`);
     }
@@ -288,11 +269,11 @@ async function checkOneUser(discordId) {
   const achievementImageCache = new Map();
 
   for (const guildId of guildsWithUser) {
-    const guildData = guildsDB[guildId];
-    if (!guildData.channel || guildData.channel === null) continue;    //Skip si channel pas défini
+    const guildData = getGuildData(guildId);
+    if (guildData.channel_id === null) continue;    //Skip si channel pas défini
 
     const lang = guildData.lang || 'en';
-    const channel = await retry(() => client.channels.fetch(guildData.channel.toString()),{ retries: 3, delay: 500 });           
+    const channel = await retry(() => client.channels.fetch(guildData.channel_id.toString()),{ retries: 3, delay: 500 });           
 
     for (const notif of notifications) {
       switch (notif.type) {
@@ -369,7 +350,7 @@ async function checkOneUser(discordId) {
   // ------ Étape 6 : Envoie des notifications globales ------
   if (notificationsGlobal.length === 0) return;
   for (const guildId of guildsWithoutUser) {
-    const guildData = guildsDB[guildId];
+    const guildData = getGuildData(guildId);
     if (notificationsGlobal.length === 0) continue;
     if (!guildData.channel || guildData.channel === null) continue;     //Skip si channel pas défini
     if (!guildData.global_notifications) continue;                      //Skip si guild a les notifs globales désactivées
@@ -415,10 +396,10 @@ client.once('ready', async () => {
 
   // Cron toutes les 10 secondes
   cron.schedule('*/10 * * * * *', async () => {
-    const usersDB = loadDB('usersdb');
     const now = Date.now();
 
-    for (const [discordId, user] of Object.entries(usersDB)) {
+    const userIds = getAllUsers();
+    for (const discordId of userIds) {
       if (!userCheckState[discordId]) {
         // premier passage → répartir un peu au hasard dans les 6min
         userCheckState[discordId] = {
@@ -474,22 +455,6 @@ client.once('ready', async () => {
       console.error('❌ Erreur cron AOTM:', err);
     }
   });
-});
-
-// Quand le bot rejoint un serveur
-client.on('guildCreate', guild => {
-  const guildsDB = loadDB('guildsdb');
-
-  if (!guildsDB[guild.id]) {
-    guildsDB[guild.id] = {
-      channel: null,
-      lang: "en",
-      global_notifications: true,
-      users: []
-    };
-    saveDB(guildsDB, 'guildsdb');
-    log(`➕ Ajouté au serveur : ${guild.name} (${guild.id})`);
-  }
 });
 
 client.login(process.env.DISCORD_TOKEN);

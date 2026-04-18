@@ -46,6 +46,7 @@
     "_DESC7_": "REGISTER.js",
     "registerSuccess": "✅ Ton compte **{username}** a bien été enregistré !",
     "registerError": "❌ Erreur lors de la connexion, es-tu sûr d'avoir bien rentré tes identifiants? (Ta clé API se trouve sur retroachievements.org/settings)",
+    "guildNotSetup": "❌ Le serveur n'est pas encore prêt à envoyer des succès, demande à un admin de faire /admin setchannel d'abord.",
 
     "_DESC8_": "STATS.js",
     "statsTitle": "📊 Statistiques du Bot",

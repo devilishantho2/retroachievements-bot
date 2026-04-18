@@ -1,6 +1,6 @@
 import { SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder, EmbedBuilder, MessageFlags, Formatters } from 'discord.js';
-import { loadDB } from '../db.js';
 import { t } from '../locales.js';
+import { guildLang } from '../db_v2.js';
 
 const BOT_VERSION = '1.2.7';
 
@@ -151,8 +151,7 @@ export default {
   async execute(interaction) {
 
     const guildId = interaction.guild?.id;
-    const guildsDb = loadDB('guildsdb');
-    const lang = guildsDb[guildId]?.lang || 'en';
+    const lang = guildLang(guildId);
     
     
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });

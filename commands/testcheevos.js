@@ -2,6 +2,7 @@ import { SlashCommandBuilder, MessageFlags } from 'discord.js';
 import { loadDB } from '../db.js';
 import { generateAchievementImage } from '../generateImage.js';
 import { t } from '../locales.js';
+import { guildLang,getUserData } from '../db_v2.js';
 
 export default {
   data: new SlashCommandBuilder()
@@ -16,12 +17,10 @@ export default {
     ),
 
   async execute(interaction) {
-    const usersDB = loadDB('usersdb');
-    const user = usersDB[interaction.user.id];
-
     const guildId = interaction.guild?.id;
-    const guildsDB = loadDB('guildsdb');
-    const lang = guildsDB[guildId]?.lang || 'en';
+    const userId = interaction.user.id;
+    const user = getUserData(userId);
+    const lang = guildLang(guildId);
 
     if (!user) {
       return interaction.reply({

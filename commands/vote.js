@@ -1,6 +1,6 @@
 import { SlashCommandBuilder, MessageFlags, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
-import { loadDB } from '../db.js';
 import { t } from '../locales.js';
+import { guildLang } from '../db_v2.js';
 
 export default {
   data: new SlashCommandBuilder()
@@ -11,7 +11,7 @@ export default {
     // Réponse éphémère (visible seulement par l'utilisateur)
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-    const lang = loadDB("guildsdb")[interaction.guildId]?.lang || 'en';
+    const lang = guildLang(interaction.guild?.id)
 
     // Création de l'embed
     const embed = new EmbedBuilder()

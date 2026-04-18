@@ -1,6 +1,7 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { loadDB } from '../db.js';
 import { t } from '../locales.js';
+import { guildLang, getGuildCount, getUserCount } from '../db_v2.js';
 
 export default {
   data: new SlashCommandBuilder()
@@ -9,13 +10,11 @@ export default {
 
   async execute(interaction) {
     const guildId = interaction.guild?.id;
-    const guildsDB = loadDB('guildsdb');
     const statsDB = loadDB('statsdb');
-    const lang = guildsDB[guildId]?.lang || 'en';
-    const usersDB = loadDB('usersdb');
+    const lang = guildLang(guildId);
 
-    const userCount = Object.keys(usersDB).length;
-    const guildCount = Object.keys(guildsDB).length;
+    const userCount = getUserCount();
+    const guildCount = getGuildCount();
 
     var imagesSize = statsDB.imagessize;
     var imageOctet = "o"

@@ -121,7 +121,7 @@
     // 🖼️ Fond
     let background;
     try {
-      background = await loadImage(backgroundImage === 0 ? default_background : backgroundImage);
+      background = await loadImage(backgroundImage == null ? default_background :`data/backgrounds/${backgroundImage}`);
       ctx.drawImage(background, 0, 0, width, height);
     } catch (err) {
       ctx.fillStyle = '#444444';
@@ -167,6 +167,7 @@
     }
 
     // Texte
+    textColor = textColor == null ? '#ffffff' : textColor;
     ctx.fillStyle = textColor;
     ctx.font = '35px "Pixel Operator Gras"';
     if (title.length > 42) {

@@ -1,6 +1,7 @@
 import { SlashCommandBuilder, MessageFlags } from 'discord.js';
-import { loadDB, setUserColor, setUserBackground } from '../db.js';
+import { loadDB } from '../db.js';
 import { t } from '../locales.js';
+import { guildLang, setUserColor, setUserBackground, isUserRegistered } from '../db_v2.js';
 
 export default {
   data: new SlashCommandBuilder()
@@ -29,54 +30,35 @@ export default {
 
   async execute(interaction) {
     const discordId = interaction.user.id;
+    const guildId = interaction.guild?.id;
     const subcommand = interaction.options.getSubcommand();
     const value = interaction.options.getString('value');
+    
+    const lang = guildLang(guildId);
 
-    const usersDB = loadDB('usersdb');
-    const user = usersDB[discordId];
-
-    const guildId = interaction.guild?.id;
-    const guildsDB = loadDB('guildsdb');
-    const lang = guildsDB[guildId]?.lang || 'en';
-
-    if (!user) {
-      return interaction.reply({
-        content: t(lang, "customNotRegistered"),
-        flags: MessageFlags.Ephemeral,
-      });
+    if (!isUserRegistered(discordId)) {
+      return interaction.reply({content: t(lang, "customNotRegistered"), flags: MessageFlags.Ephemeral});
     }
 
     if (subcommand === 'color') {
       if (!/^#?[0-9A-Fa-f]{6}$/.test(value)) {
-        return interaction.reply({
-          content: t(lang, "customWrongColor"),
-          flags: MessageFlags.Ephemeral,
-        });
+        return interaction.reply({content: t(lang, "customWrongColor"), flags: MessageFlags.Ephemeral});
       }
 
       const normalizedColor = value.startsWith('#') ? value : `#${value}`;
       setUserColor(discordId, normalizedColor);
 
-      return interaction.reply({
-        content: t(lang, "customColorSuccess", { color : normalizedColor }),
-        flags: MessageFlags.Ephemeral,
-      });
+      return interaction.reply({content: t(lang, "customColorSuccess", { color : normalizedColor }), flags: MessageFlags.Ephemeral});
     }
 
     if (subcommand === 'background') {
       if (!/^https?:\/\/.+\.(jpg|jpeg|png|webp)(\?.*)?$/i.test(value)) {
-        return interaction.reply({
-          content: t(lang, "customWrongImage"),
-          flags: MessageFlags.Ephemeral
-        });
+        return interaction.reply({content: t(lang, "customWrongImage"), flags: MessageFlags.Ephemeral});
       }
 
       setUserBackground(discordId, value);
 
-      return interaction.reply({
-        content: t(lang, "customImageSuccess"),
-        flags: MessageFlags.Ephemeral
-      });
+      return interaction.reply({content: t(lang, "customImageSuccess"), flags: MessageFlags.Ephemeral});
     }
   }
 };

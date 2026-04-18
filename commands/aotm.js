@@ -1,6 +1,7 @@
 import { SlashCommandBuilder, MessageFlags } from 'discord.js';
 import { loadDB } from '../db.js';
 import { t } from '../locales.js';
+import { getUserData, guildLang } from '../db_v2.js';
 
 export default {
   data: new SlashCommandBuilder()
@@ -10,22 +11,18 @@ export default {
   async execute(interaction) {
 
     const guildId = interaction.guild?.id;
-    const guildsDB = loadDB('guildsdb');
-    const lang = guildsDB[guildId]?.lang || 'en';
+    const userId = interaction.user.id;
+    const lang = guildLang(guildId);
 
     const aotm = loadDB('aotmdb');
 
     if (!aotm || !aotm.id) {
-      return interaction.reply({
-        content: t(lang, "noAotm"),
-        ephemeral: true,
-      });
+      return interaction.reply({content: t(lang, "noAotm"), ephemeral: true});
     }
 
-    const usersDB = loadDB('usersdb');
-    const user = usersDB[interaction.user.id];
+    const user = getUserData(userId);
 
-    const unlocked = user ? user.aotmUnlocked : false;
+    const unlocked = user ? user.aotm_unlocked : false;
 
     const color = unlocked ? 0x2ecc71 : 0xe74c3c;
     const statusEmoji = unlocked ? '✅' : '❌';
