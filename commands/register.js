@@ -43,31 +43,15 @@ export default {
       const summary = await retry(()=>getUserSummary(authorization, { username: username, recentGamesCount: 3}));
       const awards = await retry(()=>getUserAwards(authorization, { username: username }));
 
-      const recentAchievements = Object.values(summary.recentAchievements)
-      .flatMap(game => Object.values(game))
-      .sort((a, b) => new Date(a.dateAwarded) - new Date(b.dateAwarded));
-      const lastAchievement = [recentAchievements[recentAchievements.length - 1].id,recentAchievements[recentAchievements.length - 1].dateAwarded];
-
-      const achievementsOffset = {};
-      for (const ach of recentAchievements) {
-          const id = ach.gameId;
-          achievementsOffset[id] = (achievementsOffset[id] || 0) + 1;
+      var lastAchievement = []
+      if (summary.recentAchievements) {
+        const recentAchievements = Object.values(summary.recentAchievements)
+        .flatMap(game => Object.values(game))
+        .sort((a, b) => new Date(a.dateAwarded) - new Date(b.dateAwarded));
+        lastAchievement = [recentAchievements[recentAchievements.length - 1].id,recentAchievements[recentAchievements.length - 1].dateAwarded];
+      } else {
+        lastAchievement = [null, "2000-01-01 00:00:01"]
       }
-    
-      const gameProgress = {};
-      for (const [gameId, gameAward] of Object.entries(summary.awarded || {})) {
-          gameProgress[gameId] = {
-          achieved: gameAward.numAchieved,
-          achievedH: gameAward.numAchievedHardcore,
-          offset: achievementsOffset[gameId]-1,
-          total: gameAward.numPossibleAchievements || 1
-        };
-      }
-    
-      const gameConsole = {};
-      for (const [gameId,game] of Object.entries(summary.recentlyPlayed || [])) {
-          gameConsole[game.gameId] = consoleTable[game.consoleName];
-      };
 
       var latestMaster = [];
       if (awards.masteryAwardsCount > 0 || awards.completionAwardsCount > 0) {
@@ -79,30 +63,8 @@ export default {
         }
       }
 
-      const history = [];
-      for (const achievement of recentAchievements) {
-
-        if (gameProgress[achievement.gameId].total <= 1) continue;
-    
-        const percent = Math.min(100, Math.ceil(((gameProgress[achievement.gameId].achieved - gameProgress[achievement.gameId].offset) / gameProgress[achievement.gameId].total) * 100));
-        gameProgress[achievement.gameId].offset -= 1;
-    
-        const achievementData = {
-          id: achievement.id,
-          title: achievement.title,
-          points: achievement.points,
-          description: achievement.description,
-          gameTitle: achievement.gameTitle,
-          badgeUrl: `/${achievement.badgeName}.png`,
-          progressPercent: percent,
-          hardcore: achievement.hardcoreAchieved,
-          consoleicon: gameConsole[achievement.gameId]
-        };
-        history.push(achievementData);
-      }
-
       // Si OK → on sauvegarde
-      addUser(discordId, summary.ulid, raApiKey, lastAchievement[0], lastAchievement[1], latestMaster[0], latestMaster[1], history);
+      addUser(discordId, summary.ulid, raApiKey, lastAchievement[0], lastAchievement[1], latestMaster[0], latestMaster[1]);
       if (!isUserInGuild(guildId,discordId)) {
         addUserToGuild(guildId, discordId);
       }

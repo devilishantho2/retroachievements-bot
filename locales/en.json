@@ -74,6 +74,9 @@
     "customColorSuccess": "✅ Color set to `{color}`",
     "customWrongImage": "❌ The URL must be a direct link to an image (.jpg, .jpeg, .png, or .webp).",
     "customImageSuccess": "✅ Your background image has been successfully updated!",
+    "customWrongFavAch": "❌ Both values should be numbers.",
+    "customFavAchSuccess": "✅ Your favorite achievement has been successfully updated!",
+    "customFavGameSuccess": "✅ Your favorite game has been successfully updated!",
 
     "_DESC12_": "TESTCHEEVOS.js",
     "testNotRegistered": "User not registered.",
@@ -82,6 +85,12 @@
     "lastError": "❌ You are not registered on the bot or the username does not exist.",
     "lastNoActivity": "❌ No recent activity found for **{username}**.",
     "lastTitle": "🎮 Last activity of {username}",
-    "lastPoints": "Total points: {points}"
+    "lastPoints": "Total points: {points}",
+
+    "_DESC14": "GENERATEPROFILEIMAGE.js",
+    "lastGame": "🕹️ Last game :",
+    "lastRewards": "🏆 Last rewards :",
+    "profileMasterPoints": "{number} achievements",
+    "profileFavorites": "❤️ Favorites :"
 }
   

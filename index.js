@@ -11,11 +11,11 @@ import {
   updateStats_Master
 } from './db.js';
 import { buildAuthorization, getUserSummary, getAchievementOfTheWeek } from '@retroachievements/api';
-import { generateAchievementImage } from './generateImage.js';
+import { generateAchievementImage } from './generateAchievementImage.js';
 import { t } from './locales.js';
 import { consoleTable } from './consoleTable.js';
 import { retry, log, getPointsEmoji } from './utils.js';
-import { addToUserHistory, getAllUsers, getGuildCount, getGuildData, getGuildsWithoutUser, getGuildsWithUser, getUserCount, getUserData, setUserLastAchievement, setUserLastMaster, resetAotmUnlocked, resetAotwUnlocked, setUserAotw, setUserAotm } from './db_v2.js'
+import { getAllUsers, getGuildCount, getGuildData, getGuildsWithoutUser, getGuildsWithUser, getUserCount, getUserData, setUserLastAchievement, resetAotmUnlocked, resetAotwUnlocked, setUserAotw, setUserAotm } from './db_v2.js'
 
 config();
 
@@ -202,8 +202,6 @@ async function checkOneUser(discordId) {
       };
 
       notifications.push({type: "achievement",achievementData});
-
-      addToUserHistory(discordId, achievementData);
       updateStats_Points(achievement.points,achievement.hardcoreAchieved);
 
       log(`✅ ${summary.user} → ${achievement.id} (${percent}% ${achievement.hardcoreAchieved ? 'H' : 'S'} ${getPointsEmoji(achievement.points)})`);
@@ -246,7 +244,6 @@ async function checkOneUser(discordId) {
         boxArt: gameInfo?.imageBoxArt,
         total, hardcore
     });
-    setUserLastMaster(discordId,gameInfo?.imageIcon?.replace('/Images/', ''), 1);
     updateStats_Master("mastery");
     log(`🏅 ${summary.user} a masterisé ${gameInfo?.title}`);
     } else if (gameProgress[gameId].total > 0 && gameProgress[gameId].achieved === gameProgress[gameId].total) {
@@ -257,7 +254,6 @@ async function checkOneUser(discordId) {
         boxArt: gameInfo?.imageBoxArt,
         total, softcore
     });
-    setUserLastMaster(discordId,gameInfo?.imageIcon?.replace('/Images/', ''), 0);
     updateStats_Master("completion");
     log(`🏅 ${summary.user} a terminé ${gameInfo?.title}`);
     }

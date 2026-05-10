@@ -1,8 +1,7 @@
 import { SlashCommandBuilder, MessageFlags } from 'discord.js';
-import { loadDB } from '../db.js';
-import { generateAchievementImage } from '../generateImage.js';
+import { generateAchievementImage } from '../generateAchievementImage.js';
 import { t } from '../locales.js';
-import { guildLang,getUserData } from '../db_v2.js';
+import { guildLang, getUserData } from '../db_v2.js';
 
 export default {
   data: new SlashCommandBuilder()

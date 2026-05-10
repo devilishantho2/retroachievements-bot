@@ -46,13 +46,13 @@ export function deleteUserFromServer(guildId, discordId) {
 }
 
 // Ajoute un utilisateur
-export function addUser(discordId,ulid,raApiKey,lastAchievement,lastAchievementDate,lastMaster,lastMasterDate,history) {
+export function addUser(discordId,ulid,raApiKey,lastAchievement,lastAchievementDate) {
     db.prepare(`
-        INSERT INTO users (discord_id, ulid, ra_api_key, background, color, last_achievement_id, last_achievement_time, aotw_unlocked, aotm_unlocked, last_master_id, last_master_hardcore, history) 
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+        INSERT INTO users (discord_id, ulid, ra_api_key, background, color, last_achievement_id, last_achievement_time, aotw_unlocked, aotm_unlocked) 
+        VALUES (?,?,?,?,?,?,?,?,?)
         ON CONFLICT (discord_id) DO UPDATE SET ulid = excluded.ulid, ra_api_key = excluded.ra_api_key
         `)
-        .run(discordId, ulid, raApiKey, null, null, lastAchievement, lastAchievementDate, 0, 0, lastMaster, lastMasterDate, JSON.stringify(history))
+        .run(discordId, ulid, raApiKey, null, null, lastAchievement, lastAchievementDate, 0, 0)
 }
 
 // Ajoute un utilisateur à un serveur
@@ -118,9 +118,15 @@ export async function setUserBackground(discordId,url) {
     db.prepare('UPDATE users SET background = ? WHERE discord_id = ?').run(`background_${discordId}.png`,discordId)
 }
 
-// Retourne toutes les données d'un utilisateur
+// Retourne toutes les données d'un utilisateur avec son id discord
 export function getUserData(discordId) {
     const rows = db.prepare('SELECT * FROM users WHERE discord_id = ?').get(discordId);
+    return rows;
+}
+
+// Retourne toutes les données d'un utilisateur avec son id ra
+export function getUserDataUlid(raId) {
+    const rows = db.prepare('SELECT * FROM users WHERE ulid = ?').get(raId);
     return rows;
 }
 
@@ -159,20 +165,6 @@ export function setUserLastAchievement(discordId,achievementId,achievementDate) 
     db.prepare('UPDATE users SET last_achievement_id = ?, last_achievement_time = ? WHERE discord_id = ?').run(achievementId,achievementDate,discordId)
 }
 
-// Change les informations du dernier master d'un utilisateur
-export function setUserLastMaster(discordId,masterId,hardcore) {
-    db.prepare('UPDATE users SET last_master_id = ?, last_master_hardcore = ? WHERE discord_id = ?').run(masterId,hardcore,discordId)
-}
-
-// Ajoute un succès à l'historique d'un joueur
-export function addToUserHistory(discordId,achievementData) {
-    const row = db.prepare('SELECT history FROM users WHERE discord_id = ?').get(discordId);
-    let history = JSON.parse(row.history || "[]");
-    if (history.length >= 10) { history.shift() };
-    history.push(achievementData);
-    db.prepare('UPDATE users SET history = ? WHERE discord_id = ?').run(JSON.stringify(history), discordId)
-}
-
 // Remet à false le satut de l'aotw pour tout le monde
 export function resetAotwUnlocked() {
     db.prepare('UPDATE users SET aotw_unlocked = 0').run()
@@ -191,4 +183,14 @@ export function setUserAotw(discordId,value) {
 // Change le statut de l'aotm pour un joueur
 export function setUserAotm(discordId,value) {
     db.prepare('UPDATE users SET aotm_unlocked = ? WHERE discord_id = ?').run(value,discordId)
+}
+
+// Change le succès préféré d'un joueur
+export function setUserFavoriteAchievement(discordId,value) {
+    db.prepare('UPDATE users SET favorite_achievement = ? WHERE discord_id = ?').run(value,discordId)
+}
+
+// Change le jeu préféré d'un joueur
+export function setUserFavoriteGame(discordId,value) {
+    db.prepare('UPDATE users SET favorite_game = ? WHERE discord_id = ?').run(value,discordId)
 }
