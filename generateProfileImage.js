@@ -2,8 +2,7 @@ import path from 'path';
 import sharp from "sharp";
 import { fileURLToPath } from 'url';
 import { createCanvas, loadImage, registerFont } from 'canvas';
-import { consoleTable } from './consoleTable.js';
-import { codeBlock } from 'discord.js';
+import { consoleTable, consoleTableId } from './consoleTable.js';
 import { t } from './locales.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -390,6 +389,10 @@ export async function generateProfileImage(backgroundImage, color, data, data2, 
         ctx.textAlign = "center";
         ctx.fillText(t(lang, "profileMasterPoints", {number:data5.attributes.achievementsPublished}),250, 1030);
         ctx.fillText(`${data5.attributes.pointsTotal}(${data5.attributes.pointsWeighted}) points`,250, 1050);
+
+        const favGameConsoleIcon = await loadImage(`images/systems/${consoleTableId[data5.relationships.system.data.id]}.png`);
+        ctx.drawImage(favGameConsoleIcon, 100, 1034, 40, 40);
+
     }
 
     //7. Favoris ach
