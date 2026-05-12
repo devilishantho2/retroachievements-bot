@@ -44,7 +44,7 @@
     "aotGame": "Game",
 
     "_DESC7_": "REGISTER.js",
-    "registerSuccess": "✅ Your account **{username}** has been successfully registered!",
+    "registerSuccess": "✅ Your account **{username}** has been successfully registered!\nIn a few days, i am updating the way your recent achievements are retrieved. This change will drastically reduce API requests while making the bot significantly faster.To ensure your achievements continue to be tracked, please follow **CheevosTracker** on the official RetroAchievements website.\n⚠️⚠️If you do not follow CheevosTracker, your achievements will no longer be processed after the update.⚠️⚠️",
     "registerError": "❌ Error while connecting. Are you sure you entered your credentials correctly? (You can find your API key at retroachievements.org/settings)",
     "guildNotSetup": "❌ Server is not ready to send achievements yet, ask an admin to run the command /admin setchannel first.",
 

@@ -1,5 +1,4 @@
 import { SlashCommandBuilder, MessageFlags } from 'discord.js';
-import { loadDB } from '../db.js';
 import { t } from '../locales.js';
 import { guildLang, setUserColor, setUserBackground, isUserRegistered, setUserFavoriteAchievement, setUserFavoriteGame } from '../db_v2.js';
 import { getAchievementV2, getGameV2 } from '../api_v2.js';

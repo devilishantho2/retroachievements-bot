@@ -46,14 +46,14 @@ const commandsInfo = {
   },
   customize: {
     fr: {
-      description: 'Permet à l\'utilisateur de customiser ses annonces.',
-      usage: '/customize background/color <url>/<color>',
-      details: 'Cette commande permet à l\'utilisateur de changer l\'image de fond de ses succès ainsi que la couleur du texte. Pour l\'image il faut un url valide (github ou imgur marche bien), pour la couleur il faut une couleur hexadécimal.'
+      description: 'Permet à l\'utilisateur de customiser son profile et ses notifications.',
+      usage: '/customize background/color/favgame/favachievement <url>/<color>/<id>/<id>',
+      details: 'Cette commande permet à l\'utilisateur de changer l\'image de fond de ses succès ainsi que la couleur du texte. Pour l\'image il faut un url valide (github ou imgur marche bien), pour la couleur il faut une couleur hexadécimal. Elle permet aussi à l\'utilisateur de définir un jeu et un succès favoris (affiché avec /profile)'
     },
     en: {
-      description: 'Allows the user to customize their announcements.',
-      usage: '/customize background/color <url>/<color>',
-      details: 'This command allows the user to change the background image of their achievements as well as the text color. For the image, a valid URL is required (GitHub or Imgur work well), and for the color, a hexadecimal color code is needed.'
+      description: 'Allows the user to customize their profile and their notifications.',
+      usage: '/customize background/color/favgame/favachievement <url>/<color>/<id>/<id>',
+      details: 'This command allows the user to change the background image of their achievements as well as the text color. For the image, a valid URL is required (GitHub or Imgur work well), and for the color, a hexadecimal color code is needed. It also allows the user to define a favorite game and achievement (shown with /profile)'
     }
   },
   ping: {
@@ -104,16 +104,16 @@ const commandsInfo = {
       details: 'This command displays the details of the achievement of the month.'
     }
   },
-  lastseen: {
+  profile: {
     fr: {
-      description: 'Affiche les dernières informations de jeu d\'un utilisateur.',
-      usage: '/lastseen <username>',
-      details: 'Cette commande affiche les dernieres informations de jeu d\'un utilisateur, ou les dernieres informations de jeu de l\'utilisateur si aucun pseudo est donné.'
+      description: 'Affiche le profile d\'un utlisateur.',
+      usage: '/profile (<username>)',
+      details: 'Cette commande affiche les dernieres informations de jeu d\'un utilisateur, ou les dernieres informations de jeu de l\'utilisateur si aucun pseudo est donné. (stats, dernier jeu, derniers succès débloqués, dernière mastery/completion, jeu/succès favoris)'
     },
     en: {
-      description: 'Displays the latest gaming information for a user.',
-      usage: '/lastseen <username>',
-      details: 'This command displays the latest gaming information for a specified user, or for the command sender if no username is given.'
+      description: 'Displays the profile of an user.',
+      usage: '/profile (<username>)',
+      details: 'This command displays the latest gaming information for a specified user, or for the command sender if no username is given. (stats, latest game, latest achievements unlocked, latest mastery/completion, favorite game/achievement)'
     }
   },
   vote: {
@@ -126,18 +126,6 @@ const commandsInfo = {
       description: 'Displays the links to vote for the bot on top.gg.',
       usage: '/vote',
       details: 'This command shows the links to vote for the bot on top.gg (vote and review), to help the bot gain visibility.'
-    }
-  },
-  latestcheevos: {
-    fr: {
-      description: 'Affiche les derniers succès d\'un utilisateur',
-      usage: '/latestcheevos <username>',
-      details: 'Cette commande affiche les derniers succès d\'un utilisateur, ou les derniers succès de l\'utilisateur si aucun pseudo est donné.'
-    },
-    en: {
-      description: 'Displays a user’s latest achievements',
-      usage: '/latestcheevos <username>',
-      details: 'This command displays a user’s latest achievements, or your own latest achievements if no username is provided.'
     }
   }
 };
